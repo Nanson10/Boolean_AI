@@ -3,9 +3,6 @@ package nanson;
 public class AutoGrader extends Simulator {
     private String furthestProgress = "";
     private String currentProgress = "";
-    public static void main(String[] args) {
-        new BooleanMatrixDisplay(new AutoGrader());
-    }
 
     int index = 0;
 

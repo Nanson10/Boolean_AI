@@ -23,11 +23,6 @@ public class BooleanMatrixDisplay {
     private static final Object CYCLE_LOCK = new Object();
     private static final Object INIT_LOCK = new Object();
 
-    public static void main(String[] args) {
-        simulator = new Simulator();
-        SwingUtilities.invokeLater(() -> new BooleanMatrixDisplay(simulator));
-    }
-
     public BooleanMatrixDisplay(@NotNull Simulator sim) {
         simulator = sim;
         autoGrader = null;
