@@ -23,9 +23,11 @@ public class BooleanMatrixDisplay {
     private static JLabel statusLabel;
     private static JLabel activationPercentageLabel;
     private static JLabel thresholdMultiplierLabel;
+    private static JLabel characterDisplayLabel;
+    private static int currentHighlightCount = 0; // Track the current highlight count
 
     public static void main(String[] args) {
-        simulator = new Simulator(10, 10, 10000, 5);
+        simulator = new Simulator(10, 10, 1000, 5);
         // Initialize GUI on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> initializeFrame());
     }
@@ -90,6 +92,25 @@ public class BooleanMatrixDisplay {
                 throw new RuntimeException("Error occurred while updating display", e.getCause());
             }
         }
+        
+        // Update the current highlight count
+        currentHighlightCount = highlightCount;
+    }
+    
+    /**
+     * Displays a boolean matrix while preserving the current highlight count.
+     * This is used during cycle iterations to update cell colors and status without changing highlights.
+     * 
+     * @param matrix a non-null boolean matrix to display
+     * @param currentIteration the current iteration number
+     * @param totalIterations the total number of iterations
+     * @param activationPercentage the current activation percentage
+     * @param thresholdMultiplier the current activation threshold multiplier
+     */
+    public static void displayMatrixPreserveHighlight(@NotNull boolean[][] matrix, int currentIteration, int totalIterations,
+                                                      double activationPercentage, double thresholdMultiplier) {
+        // Call displayMatrix with the preserved highlight count
+        displayMatrix(matrix, currentIteration, totalIterations, activationPercentage, thresholdMultiplier, currentHighlightCount);
     }
     
     /**
@@ -108,28 +129,44 @@ public class BooleanMatrixDisplay {
     private static void displayMatrixOnEDT(boolean[][] matrix, int matrixRows, int matrixCols, 
                                           int currentIteration, int totalIterations,
                                           double activationPercentage, double thresholdMultiplier, int highlightCount) {
-        rows = matrixRows;
-        cols = matrixCols;
-        
         // Create or update the frame
         if (frame == null) {
             initializeFrame();
         }
         
-        // Clear existing grid panel
-        if (gridPanel != null) {
-            frame.remove(gridPanel);
+        // Check if we need to recreate the grid (dimensions changed)
+        boolean needsRecreate = (rows != matrixRows || cols != matrixCols || gridPanel == null || cells == null);
+        
+        if (needsRecreate) {
+            rows = matrixRows;
+            cols = matrixCols;
+            
+            // Clear existing grid panel and dispose of old components
+            if (gridPanel != null) {
+                frame.remove(gridPanel);
+                // Remove all components to help garbage collection
+                gridPanel.removeAll();
+            }
+            
+            // Create new grid panel with updated dimensions
+            gridPanel = new JPanel(new GridLayout(rows, cols, 2, 2));
+            gridPanel.setBackground(Color.DARK_GRAY);
+            cells = new JPanel[rows][cols];
+            
+            // Create the cells
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    cells[i][j] = new JPanel();
+                    gridPanel.add(cells[i][j]);
+                }
+            }
+            
+            frame.add(gridPanel, BorderLayout.CENTER);
         }
         
-        // Create new grid panel with updated dimensions
-        gridPanel = new JPanel(new GridLayout(rows, cols, 2, 2));
-        gridPanel.setBackground(Color.DARK_GRAY);
-        cells = new JPanel[rows][cols];
-        
-        // Populate the grid
+        // Update existing cells (much faster than recreating)
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                cells[i][j] = new JPanel();
                 cells[i][j].setBackground(matrix[i][j] ? Color.GREEN : Color.WHITE);
                 
                 // Check if this cell should be highlighted (iterating from bottom-right)
@@ -154,12 +191,8 @@ public class BooleanMatrixDisplay {
                 } else {
                     cells[i][j].setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
                 }
-                
-                gridPanel.add(cells[i][j]);
             }
         }
-        
-        frame.add(gridPanel, BorderLayout.CENTER);
         
         // Update status labels with iteration info and activation metrics
         if (totalIterations > 0) {
@@ -197,7 +230,10 @@ public class BooleanMatrixDisplay {
             // Run cycle in a separate thread to avoid blocking the EDT
             new Thread(() -> {
                 if (simulator != null) {
-                    simulator.runCycle(1); // Run one cycle
+                    boolean[] result = simulator.runCycle(16); // Run one cycle with 16 outputs
+                    // Update the display one final time with the 16 cells highlighted
+                    simulator.updateDisplayWithHighlight(16);
+                    displayCharacterFromBooleanArray(result);
                 }
             }).start();
         });
@@ -212,11 +248,16 @@ public class BooleanMatrixDisplay {
         thresholdMultiplierLabel = new JLabel("Threshold: 0.000");
         thresholdMultiplierLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 4));
+        characterDisplayLabel = new JLabel("Character: -");
+        characterDisplayLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        characterDisplayLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
+        
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 5));
         buttonPanel.add(runCycleButton);
         buttonPanel.add(statusLabel);
         buttonPanel.add(activationPercentageLabel);
         buttonPanel.add(thresholdMultiplierLabel);
+        buttonPanel.add(characterDisplayLabel);
         frame.add(buttonPanel, BorderLayout.SOUTH);
         
         displayMatrix(simulator.getCurrentMatrixState(), 0, 0, 0.0, 0.0, 0);
@@ -259,6 +300,53 @@ public class BooleanMatrixDisplay {
                 frame = null;
                 gridPanel = null;
                 cells = null;
+            }
+        });
+    }
+    
+    /**
+     * Converts a 16-bit boolean array to a character.
+     * The boolean array is treated as binary bits where true = 1 and false = 0.
+     * The bits are read from index 0 to 15, with index 0 being the most significant bit.
+     * 
+     * @param booleanArray a boolean array of length 16
+     * @return the character represented by the 16-bit value
+     * @throws IllegalArgumentException if the array is not length 16
+     */
+    private static char booleanArrayToChar(boolean[] booleanArray) {
+        if (booleanArray.length != 16) {
+            throw new IllegalArgumentException("Boolean array must be of length 16");
+        }
+        
+        int value = 0;
+        for (int i = 0; i < 16; i++) {
+            if (booleanArray[i]) {
+                value |= (1 << (15 - i)); // MSB at index 0
+            }
+        }
+        
+        return (char) value;
+    }
+    
+    /**
+     * Displays the character representation of a 16-bit boolean array.
+     * Updates the character display label on the GUI.
+     * 
+     * @param booleanArray a boolean array of length 16
+     */
+    private static void displayCharacterFromBooleanArray(boolean[] booleanArray) {
+        if (booleanArray.length != 16) {
+            System.err.println("Warning: Expected boolean array of length 16, got " + booleanArray.length);
+            return;
+        }
+        
+        char character = booleanArrayToChar(booleanArray);
+        
+        SwingUtilities.invokeLater(() -> {
+            if (characterDisplayLabel != null) {
+                // Show both the character and its ASCII value
+                characterDisplayLabel.setText(String.format("Character: '%c' (0x%04X)", 
+                    character, (int) character));
             }
         });
     }

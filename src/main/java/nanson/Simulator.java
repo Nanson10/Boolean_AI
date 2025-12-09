@@ -56,17 +56,18 @@ public class Simulator {
     }
 
     public void updateDisplay(int currentIteration, int totalIterations) {
-        BooleanMatrixDisplay.displayMatrix(getCurrentMatrixState(), currentIteration, totalIterations, activationPercentage, activationThresholdMultiplier, 1);
+        BooleanMatrixDisplay.displayMatrixPreserveHighlight(getCurrentMatrixState(), currentIteration, totalIterations, activationPercentage, activationThresholdMultiplier);
+    }
+
+    public void updateDisplayWithHighlight(int highlightCount) {
+        BooleanMatrixDisplay.displayMatrix(getCurrentMatrixState(), 0, 0, activationPercentage, activationThresholdMultiplier, highlightCount);
     }
 
     public boolean[] runCycle(int lengthOfResults) {
+        // Clear highlights at the start of the cycle
+        updateDisplayWithHighlight(0);
         updateDisplay(0, RUN_NEURONS_PER_CYCLE);
         for (int i = 0; i < RUN_NEURONS_PER_CYCLE; i++) {
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
             int randRow = (int) (Math.random() * NEURONS.length);
             int randCol = (int) (Math.random() * NEURONS[0].length);
             NEURONS[randRow][randCol].computeActivation();
@@ -110,10 +111,12 @@ public class Simulator {
         private Neuron[] incomingNeurons;
         private boolean[] weights;
         private Simulator simulator;
+        private int stake;
 
         public Neuron(@NotNull Simulator simulator) {
             this.activated = false;
             this.simulator = simulator;
+            stake = 0;
         }
 
         public void setIncomingNeurons(@NotNull Neuron[] incomingNeurons) {
@@ -125,6 +128,7 @@ public class Simulator {
         }
 
         public boolean computeActivation() {
+            stake++;
             int threshold = (int)(simulator.getActivationThresholdMultiplier() * incomingNeurons.length);
             int activationSum = 0;
             for (int i = 0; i < incomingNeurons.length && i < weights.length; i++) {
@@ -142,6 +146,10 @@ public class Simulator {
 
         public boolean isActivated() {
             return activated;
+        }
+
+        public int getStake() {
+            return stake;
         }
     }
 }
