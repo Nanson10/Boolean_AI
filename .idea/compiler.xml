@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+      </profile>
+      <profile name="Annotation profile for boolean_ai" enabled="true">
+        <sourceOutputDir name="../Boolean_AI/target/generated-sources/annotations" />
+        <sourceTestOutputDir name="../Boolean_AI/target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="boolean_ai" />
+      </profile>
+    </annotationProcessing>
+  </component>
+</project>
