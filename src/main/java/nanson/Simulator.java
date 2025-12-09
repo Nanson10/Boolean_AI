@@ -10,18 +10,29 @@ public class Simulator {
     private double activationPercentage;
     private final int RUN_NEURONS_PER_CYCLE;
     private final int NUM_INCOMING_NEURONS;
+    private BooleanMatrixDisplay display;
+    private int currentIteration;
+    private int totalIterations;
+    private int highlightCount;
+    private StringBuilder changedCells;
+    private Neuron nextNeuron;
+
+    public Simulator() {
+        this(Constants.DEFAULT_MATRIX_WIDTH, Constants.DEFAULT_MATRIX_HEIGHT, Constants.DEFAULT_RUN_NEURONS_PER_CYCLE, Constants.DEFAULT_NUM_INCOMING_NEURONS);
+    }
 
     public Simulator(int width, int height, int runNeuronsPerCycle, int numIncomingNeurons) {
         NEURONS = new Neuron[height][width];
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
-                NEURONS[i][j] = new Neuron(this);
+                NEURONS[i][j] = new Neuron(this, i, j);
             }
         }
         activationThresholdMultiplier = 0.0;
         activationPercentage = 0.0;
         RUN_NEURONS_PER_CYCLE = runNeuronsPerCycle;
         NUM_INCOMING_NEURONS = numIncomingNeurons;
+        changedCells = new StringBuilder();
 
         for (Neuron[] neuronRow : NEURONS) {
             for (Neuron neuron : neuronRow) {
@@ -40,6 +51,45 @@ public class Simulator {
         return matrixState;
     }
 
+    public double getActivationPercentage() {
+        return activationPercentage;
+    }
+
+    public int getCurrentIteration() {
+        return currentIteration;
+    }
+
+    public int getTotalIterations() {
+        return totalIterations;
+    }
+
+    public int getHighlightCount() {
+        return highlightCount;
+    }
+
+    public void setDisplay(BooleanMatrixDisplay display) {
+        this.display = display;
+    }
+
+    private void recordCellChange(int row, int col, boolean activated) {
+        if (changedCells.length() > 0) {
+            changedCells.append(Constants.CELL_DELIMITER);
+        }
+        changedCells.append(row)
+                    .append(Constants.FIELD_DELIMITER)
+                    .append(col)
+                    .append(Constants.FIELD_DELIMITER)
+                    .append(activated ? "1" : "0");
+    }
+
+    private void clearChanges() {
+        changedCells.setLength(0);
+    }
+
+    private String getChangesString() {
+        return changedCells.toString();
+    }
+
     public void setRandomIncomingNeuronsAndWeights(Neuron neuron) {
         Neuron[] incomingNeurons = new Neuron[NUM_INCOMING_NEURONS];
         boolean[] weights = new boolean[NUM_INCOMING_NEURONS];
@@ -49,32 +99,36 @@ public class Simulator {
             incomingNeurons[i] = NEURONS[randRow][randCol];
             weights[i] = Math.random() < 0.5;
         }
-        neuron.setIncomingNeurons(incomingNeurons);
-        neuron.setWeights(weights);
+        neuron.setIncomingNeuronsAndWeights(incomingNeurons, weights);
     }
 
-    public void updateDisplay() {
-        BooleanMatrixDisplay.displayMatrix(getCurrentMatrixState(), 0, 0, activationPercentage, activationThresholdMultiplier, 0);
-    }
-
-    public void updateDisplay(int currentIteration, int totalIterations) {
-        BooleanMatrixDisplay.displayMatrixPreserveHighlight(getCurrentMatrixState(), currentIteration, totalIterations, activationPercentage, activationThresholdMultiplier);
-    }
-
-    public void updateDisplayWithHighlight(int highlightCount) {
-        BooleanMatrixDisplay.displayMatrix(getCurrentMatrixState(), 0, 0, activationPercentage, activationThresholdMultiplier, highlightCount);
+    private void updateDisplay() {
+        if (display != null) {
+            display.update(getChangesString());
+            clearChanges();
+        }
     }
 
     public boolean[] runCycle(int lengthOfResults) {
         // Clear highlights at the start of the cycle
-        updateDisplayWithHighlight(0);
-        updateDisplay(0, RUN_NEURONS_PER_CYCLE);
+        highlightCount = 0;
+        currentIteration = 0;
+        totalIterations = RUN_NEURONS_PER_CYCLE;
+        updateDisplay();
+        
         for (int i = 0; i < RUN_NEURONS_PER_CYCLE; i++) {
-            int randRow = (int) (Math.random() * NEURONS.length);
-            int randCol = (int) (Math.random() * NEURONS[0].length);
-            NEURONS[randRow][randCol].computeActivation();
-            updateDisplay(i + 1, RUN_NEURONS_PER_CYCLE);
+            if (nextNeuron == null)
+                nextNeuron = NEURONS[0][0];
+            nextNeuron.computeActivation();
+            nextNeuron = nextNeuron.getNextNeuron();
+            currentIteration++;
+            updateDisplay();
         }
+        
+        // Highlight the result cells
+        highlightCount = lengthOfResults;
+        updateDisplay();
+        
         boolean[] results = new boolean[lengthOfResults];
         int index = 0;
         for (int i = NEURONS.length - 1; i >= 0 && index < lengthOfResults; i--) {
@@ -116,7 +170,7 @@ public class Simulator {
             }
         }
         neuronList.sort(Neuron::compareTo);
-        int neuronOnEnd = (int)(0.1 * neuronList.size());
+        int neuronOnEnd = (int)(0.01 * neuronList.size());
         if (goodIfTrue) { // Neurons with low stake are punished
             for (int i = 0; i < neuronOnEnd; i++) {
                 setRandomIncomingNeuronsAndWeights(neuronList.get(i));
@@ -135,44 +189,59 @@ public class Simulator {
         private boolean[] weights;
         private Simulator simulator;
         private int stake;
+        private final int row;
+        private final int col;
+        private int nextNeuronIndex;
 
-        public Neuron(@NotNull Simulator simulator) {
+        public Neuron(@NotNull Simulator simulator, int row, int col) {
             this.activated = false;
             this.simulator = simulator;
+            this.row = row;
+            this.col = col;
             stake = 0;
+            nextNeuronIndex = 0;
         }
 
-        public void setIncomingNeurons(@NotNull Neuron[] incomingNeurons) {
+        public void setIncomingNeuronsAndWeights(@NotNull Neuron[] incomingNeurons, @NotNull boolean[] weights) {
             this.incomingNeurons = incomingNeurons;
+            this.weights = weights;
+            nextNeuronIndex = 0;
         }
 
-        public void setWeights(@NotNull boolean[] weights) {
-            this.weights = weights;
+        public Neuron getNextNeuron() {
+            if (nextNeuronIndex >= incomingNeurons.length) {
+                nextNeuronIndex = 0;
+            }
+            return incomingNeurons[nextNeuronIndex++];
         }
 
         public boolean computeActivation() {
             stake++;
             int threshold = (int)(simulator.getActivationThresholdMultiplier() * incomingNeurons.length);
             int activationSum = 0;
+            boolean oldActivated = activated;
+            
             for (int i = 0; i < incomingNeurons.length && i < weights.length; i++) {
                 if (weights[i] && incomingNeurons[i].activated) {
                     activationSum++;
                 }
                 if (activationSum >= threshold) {
                     activated = true;
+                    if (oldActivated != activated) {
+                        simulator.recordCellChange(row, col, activated);
+                    }
                     return true;
                 }
             }
             activated = false;
+            if (oldActivated != activated) {
+                simulator.recordCellChange(row, col, activated);
+            }
             return false;
         }
 
         public boolean isActivated() {
             return activated;
-        }
-
-        public int getStake() {
-            return stake;
         }
 
         public void clearStake() {
