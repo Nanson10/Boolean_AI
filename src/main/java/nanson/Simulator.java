@@ -6,18 +6,28 @@ import org.jetbrains.annotations.NotNull;
 
 public class Simulator {
     private final Neuron[][] NEURONS;
+    private double activationThresholdMultiplier;
     private double activationPercentage;
     private final int RUN_NEURONS_PER_CYCLE;
+    private final int NUM_INCOMING_NEURONS;
 
-    public Simulator(int width, int height, int runNeuronsPerCycle) {
+    public Simulator(int width, int height, int runNeuronsPerCycle, int numIncomingNeurons) {
         NEURONS = new Neuron[height][width];
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 NEURONS[i][j] = new Neuron(this);
             }
         }
+        activationThresholdMultiplier = 0.0;
         activationPercentage = 0.0;
         RUN_NEURONS_PER_CYCLE = runNeuronsPerCycle;
+        NUM_INCOMING_NEURONS = numIncomingNeurons;
+
+        for (Neuron[] neuronRow : NEURONS) {
+            for (Neuron neuron : neuronRow) {
+                setRandomIncomingNeuronsAndWeights(neuron);
+            }
+        }
     }
 
     public boolean[][] getCurrentMatrixState() {
@@ -30,35 +40,52 @@ public class Simulator {
         return matrixState;
     }
 
+    public void setRandomIncomingNeuronsAndWeights(Neuron neuron) {
+        Neuron[] incomingNeurons = new Neuron[NUM_INCOMING_NEURONS];
+        boolean[] weights = new boolean[NUM_INCOMING_NEURONS];
+        for (int i = 0; i < NUM_INCOMING_NEURONS; i++) {
+            int randRow = (int) (Math.random() * NEURONS.length);
+            int randCol = (int) (Math.random() * NEURONS[0].length);
+            incomingNeurons[i] = NEURONS[randRow][randCol];
+            weights[i] = Math.random() < 0.5;
+        }
+        neuron.setIncomingNeurons(incomingNeurons);
+        neuron.setWeights(weights);
+    }
+
     public void updateDisplay() {
         BooleanMatrixDisplay.displayMatrix(getCurrentMatrixState());
     }
 
-    public Supplier<boolean[]> runCycle(int lengthOfResults) {
-        return () -> {
+    public boolean[] runCycle(int lengthOfResults) {
+        updateDisplay();
+        for (int i = 0; i < RUN_NEURONS_PER_CYCLE; i++) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            int randRow = (int) (Math.random() * NEURONS.length);
+            int randCol = (int) (Math.random() * NEURONS[0].length);
+            NEURONS[randRow][randCol].computeActivation();
             updateDisplay();
-            for (int i = 0; i < RUN_NEURONS_PER_CYCLE; i++) {
-                int randRow = (int) (Math.random() * NEURONS.length);
-                int randCol = (int) (Math.random() * NEURONS[0].length);
-                NEURONS[randRow][randCol].computeActivation();
-                updateDisplay();
+        }
+        boolean[] results = new boolean[lengthOfResults];
+        int index = 0;
+        for (int i = NEURONS.length - 1; i >= 0 && index < lengthOfResults; i--) {
+            for (int j = NEURONS[0].length - 1; j >= 0 && index < lengthOfResults; j--) {
+                results[index++] = NEURONS[i][j].isActivated();
             }
-            boolean[] results = new boolean[lengthOfResults];
-            int index = 0;
-            for (int i = NEURONS.length - 1; i >= 0 && index < lengthOfResults; i--) {
-                for (int j = NEURONS[0].length - 1; j >= 0 && index < lengthOfResults; j--) {
-                    results[index++] = NEURONS[i][j].isActivated();
-                }
-            }
-            return results;
-        };
+        }
+        return results;
     }
 
-    public double getActivationPercentage() {
-        return activationPercentage;
+    public double getActivationThresholdMultiplier() {
+        updateActivationThresholdMultiplier();
+        return activationThresholdMultiplier;
     }
 
-    public void updateActivationPercentage() {
+    public void updateActivationThresholdMultiplier() {
         activationPercentage = 0;
         for (Neuron[] neuronRow : NEURONS) {
             for (Neuron neuron : neuronRow) {
@@ -68,6 +95,12 @@ public class Simulator {
             }
         }
         activationPercentage /= (NEURONS.length * NEURONS[0].length);
+        activationThresholdMultiplier += activationPercentage - 0.5;
+        if (activationPercentage < 0.4) {
+            activationThresholdMultiplier -= 0.1;
+        } else if (activationPercentage > 0.6) {
+            activationThresholdMultiplier += 0.1;
+        }
     }
 
     private static class Neuron {
@@ -90,10 +123,13 @@ public class Simulator {
         }
 
         public boolean computeActivation() {
-            int threshold = (int)(simulator.getActivationPercentage() * incomingNeurons.length);
+            int threshold = (int)(simulator.getActivationThresholdMultiplier() * incomingNeurons.length);
             int activationSum = 0;
-            for (Neuron neuron : incomingNeurons) {
-                if (neuron.isActivated() && activationSum++ >= threshold) {
+            for (int i = 0; i < incomingNeurons.length && i < weights.length; i++) {
+                if (weights[i] && incomingNeurons[i].activated) {
+                    activationSum++;
+                }
+                if (activationSum >= threshold) {
                     activated = true;
                     return true;
                 }
@@ -104,14 +140,6 @@ public class Simulator {
 
         public boolean isActivated() {
             return activated;
-        }
-
-        public void activate() {
-            this.activated = true;
-        }
-
-        public void deactivate() {
-            this.activated = false;
         }
     }
 }
