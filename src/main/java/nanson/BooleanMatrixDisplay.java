@@ -259,8 +259,6 @@ public class BooleanMatrixDisplay {
     private void initializeFrame() {
         frame = new JFrame("Boolean Matrix Display");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 600);
-        frame.setLocationRelativeTo(null);
         frame.setLayout(new BorderLayout());
         
         runCycleButton = new JButton("Run Cycle");
@@ -320,25 +318,46 @@ public class BooleanMatrixDisplay {
         progressLabel.setHorizontalAlignment(SwingConstants.CENTER);
         progressLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
         
-        // Create control panel with FlowLayout for buttons and labels
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        controlPanel.add(runCycleButton);
-        controlPanel.add(rewardButton);
-        controlPanel.add(punishButton);
-        controlPanel.add(statusLabel);
-        controlPanel.add(activationPercentageLabel);
-        controlPanel.add(thresholdMultiplierLabel);
-        controlPanel.add(characterDisplayLabel);
+        // Create control panel with stacked layout
+        JPanel controlPanel = new JPanel();
+        controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
+        controlPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        
+        // Button row
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        buttonPanel.add(runCycleButton);
+        buttonPanel.add(rewardButton);
+        buttonPanel.add(punishButton);
+        
+        // Status row
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 2));
+        statusPanel.add(statusLabel);
+        statusPanel.add(activationPercentageLabel);
+        statusPanel.add(thresholdMultiplierLabel);
+        
+        // Output row
+        JPanel outputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 2));
+        outputPanel.add(characterDisplayLabel);
+        
+        // Add panels to control panel
+        controlPanel.add(buttonPanel);
+        controlPanel.add(statusPanel);
+        controlPanel.add(outputPanel);
         
         // Only show progress label if AutoGrader is active
         if (autoGrader != null) {
-            controlPanel.add(progressLabel);
+            JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 2));
+            progressPanel.add(progressLabel);
+            controlPanel.add(progressPanel);
         }
         
         frame.add(controlPanel, BorderLayout.SOUTH);
         
         updateButtonStates();
         update(""); // Use the new update method with empty string for full initial update
+        
+        frame.pack(); // Auto-size window based on component preferred sizes
+        frame.setLocationRelativeTo(null); // Center on screen
     }
     
     private void updateButtonStates() {
