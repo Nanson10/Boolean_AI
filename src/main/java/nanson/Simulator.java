@@ -1,7 +1,5 @@
 package nanson;
 
-import java.util.function.Supplier;
-
 import org.jetbrains.annotations.NotNull;
 
 public class Simulator {
@@ -54,21 +52,25 @@ public class Simulator {
     }
 
     public void updateDisplay() {
-        BooleanMatrixDisplay.displayMatrix(getCurrentMatrixState());
+        BooleanMatrixDisplay.displayMatrix(getCurrentMatrixState(), 0, 0, activationPercentage, activationThresholdMultiplier, 0);
+    }
+
+    public void updateDisplay(int currentIteration, int totalIterations) {
+        BooleanMatrixDisplay.displayMatrix(getCurrentMatrixState(), currentIteration, totalIterations, activationPercentage, activationThresholdMultiplier, 1);
     }
 
     public boolean[] runCycle(int lengthOfResults) {
-        updateDisplay();
+        updateDisplay(0, RUN_NEURONS_PER_CYCLE);
         for (int i = 0; i < RUN_NEURONS_PER_CYCLE; i++) {
             try {
-                Thread.sleep(50);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
             int randRow = (int) (Math.random() * NEURONS.length);
             int randCol = (int) (Math.random() * NEURONS[0].length);
             NEURONS[randRow][randCol].computeActivation();
-            updateDisplay();
+            updateDisplay(i + 1, RUN_NEURONS_PER_CYCLE);
         }
         boolean[] results = new boolean[lengthOfResults];
         int index = 0;
@@ -95,12 +97,12 @@ public class Simulator {
             }
         }
         activationPercentage /= (NEURONS.length * NEURONS[0].length);
-        activationThresholdMultiplier += activationPercentage - 0.5;
-        if (activationPercentage < 0.4) {
-            activationThresholdMultiplier -= 0.1;
-        } else if (activationPercentage > 0.6) {
-            activationThresholdMultiplier += 0.1;
-        }
+        activationThresholdMultiplier += QuadraticSlowingFactor(activationPercentage - 0.5, 1) * (activationPercentage - 0.5);
+    }
+
+    public double QuadraticSlowingFactor(double x, int domain) {
+        double normalizedX = Math.min(Math.abs(x) / domain, 1.0);
+        return Math.pow(normalizedX, 2);
     }
 
     private static class Neuron {
