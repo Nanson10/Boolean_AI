@@ -1,5 +1,7 @@
 package nanson;
 
+import java.util.ArrayList;
+
 import org.jetbrains.annotations.NotNull;
 
 public class Simulator {
@@ -106,7 +108,28 @@ public class Simulator {
         return Math.pow(normalizedX, 2);
     }
 
-    private static class Neuron {
+    public void stimulate(boolean goodIfTrue) {
+        ArrayList<Neuron> neuronList = new ArrayList<>();
+        for (Neuron[] neuronRow : NEURONS) {
+            for (Neuron neuron : neuronRow) {
+                neuronList.add(neuron);
+            }
+        }
+        neuronList.sort(Neuron::compareTo);
+        int neuronOnEnd = (int)(0.1 * neuronList.size());
+        if (goodIfTrue) { // Neurons with low stake are punished
+            for (int i = 0; i < neuronOnEnd; i++) {
+                setRandomIncomingNeuronsAndWeights(neuronList.get(i));
+            }
+        } else { // Neurons with high stake are punished
+            for (int i = neuronList.size() - neuronOnEnd; i < neuronList.size(); i++) {
+                setRandomIncomingNeuronsAndWeights(neuronList.get(i));
+            }
+        }
+        neuronList.forEach((n) -> n.clearStake());
+    }
+
+    private static class Neuron implements Comparable<Neuron>{
         private boolean activated;
         private Neuron[] incomingNeurons;
         private boolean[] weights;
@@ -150,6 +173,15 @@ public class Simulator {
 
         public int getStake() {
             return stake;
+        }
+
+        public void clearStake() {
+            stake = 0;
+        }
+
+        @Override
+        public int compareTo(Neuron o) {
+            return Integer.compare(stake, o.stake);
         }
     }
 }

@@ -20,11 +20,14 @@ public class BooleanMatrixDisplay {
     private static int cols;
     private static Simulator simulator;
     private static JButton runCycleButton;
+    private static JButton rewardButton;
+    private static JButton punishButton;
     private static JLabel statusLabel;
     private static JLabel activationPercentageLabel;
     private static JLabel thresholdMultiplierLabel;
     private static JLabel characterDisplayLabel;
     private static int currentHighlightCount = 0; // Track the current highlight count
+    private static volatile boolean cycleRunning = false; // Track if a cycle is currently running
 
     public static void main(String[] args) {
         simulator = new Simulator(10, 10, 1000, 5);
@@ -230,12 +233,36 @@ public class BooleanMatrixDisplay {
             // Run cycle in a separate thread to avoid blocking the EDT
             new Thread(() -> {
                 if (simulator != null) {
+                    // Disable buttons while cycle is running
+                    cycleRunning = true;
+                    updateButtonStates();
+                    
                     boolean[] result = simulator.runCycle(16); // Run one cycle with 16 outputs
                     // Update the display one final time with the 16 cells highlighted
                     simulator.updateDisplayWithHighlight(16);
                     displayCharacterFromBooleanArray(result);
+                    
+                    // Re-enable buttons after cycle completes
+                    cycleRunning = false;
+                    updateButtonStates();
                 }
             }).start();
+        });
+        
+        // Create Reward button
+        rewardButton = new JButton("Reward");
+        rewardButton.addActionListener(e -> {
+            if (simulator != null && !cycleRunning) {
+                simulator.stimulate(true);
+            }
+        });
+        
+        // Create Punish button
+        punishButton = new JButton("Punish");
+        punishButton.addActionListener(e -> {
+            if (simulator != null && !cycleRunning) {
+                simulator.stimulate(false);
+            }
         });
         
         // Create status labels
@@ -252,8 +279,10 @@ public class BooleanMatrixDisplay {
         characterDisplayLabel.setHorizontalAlignment(SwingConstants.CENTER);
         characterDisplayLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
         
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 5));
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 7));
         buttonPanel.add(runCycleButton);
+        buttonPanel.add(rewardButton);
+        buttonPanel.add(punishButton);
         buttonPanel.add(statusLabel);
         buttonPanel.add(activationPercentageLabel);
         buttonPanel.add(thresholdMultiplierLabel);
@@ -261,6 +290,21 @@ public class BooleanMatrixDisplay {
         frame.add(buttonPanel, BorderLayout.SOUTH);
         
         displayMatrix(simulator.getCurrentMatrixState(), 0, 0, 0.0, 0.0, 0);
+    }
+    
+    /**
+     * Updates the enabled state of buttons based on whether a cycle is running.
+     * Reward and Punish buttons are only enabled when no cycle is running.
+     */
+    private static void updateButtonStates() {
+        SwingUtilities.invokeLater(() -> {
+            if (rewardButton != null) {
+                rewardButton.setEnabled(!cycleRunning);
+            }
+            if (punishButton != null) {
+                punishButton.setEnabled(!cycleRunning);
+            }
+        });
     }
     
     /**
