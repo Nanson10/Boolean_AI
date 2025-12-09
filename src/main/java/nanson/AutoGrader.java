@@ -7,34 +7,36 @@ public class AutoGrader extends Simulator {
         new BooleanMatrixDisplay(new AutoGrader());
     }
 
-    private int index = 0;
+    int index = 0;
 
     @Override
     public boolean[] runCycle(int lengthOfResults) {
         boolean[] results = super.runCycle(lengthOfResults);
         char answer = Utilities.booleanArrayToChar(results);  // Validate conversion
-        if (answer != ('A' + index)) {
-            stimulate(false);
-            currentProgress = "";
-        }
-        else {
+        if (answer == (char)('A' + index)) {
             stimulate(true);
             currentProgress += answer;
             if (currentProgress.length() > furthestProgress.length()) {
                 furthestProgress = currentProgress;
             }
             index++;
-            if (index + 'A' > 'Z')
+            if ('A' + index > 'Z') {
                 index = 0;
+            }
+        }
+        else {
+            stimulate(false);
+            currentProgress = "";
+            index = 0;
         }
         return results;
     }
 
     public String getFurthestProgress() {
-        return "\"" + furthestProgress + "\"";
+        return "\"" + furthestProgress.length() + "\"";
     }
 
     public String getCurrentProgress() {
-        return "\"" + currentProgress + "\"";
+        return "\"" + currentProgress.length() + "\"";
     }
 }

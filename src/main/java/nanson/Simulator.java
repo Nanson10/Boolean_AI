@@ -28,7 +28,7 @@ public class Simulator {
                 NEURONS[i][j] = new Neuron(this, i, j);
             }
         }
-        activationThresholdMultiplier = 0.0;
+        activationThresholdMultiplier = 0.5;
         activationPercentage = 0.0;
         RUN_NEURONS_PER_CYCLE = runNeuronsPerCycle;
         NUM_INCOMING_NEURONS = numIncomingNeurons;
@@ -154,12 +154,13 @@ public class Simulator {
             }
         }
         activationPercentage /= (NEURONS.length * NEURONS[0].length);
-        activationThresholdMultiplier += QuadraticSlowingFactor(activationPercentage - 0.5, 1) * (activationPercentage - 0.5);
+        // activationThresholdMultiplier += LogarithmicSlowingFactor(activationPercentage - 0.5, 1, 10) * (activationPercentage - 0.5);
+        activationThresholdMultiplier = activationPercentage;
     }
 
-    public double QuadraticSlowingFactor(double x, int domain) {
-        double normalizedX = Math.min(Math.abs(x) / domain, 1.0);
-        return Math.pow(normalizedX, 2);
+    public double LogarithmicSlowingFactor(double x, int domain, double base) {
+        double normalizedX = Math.abs(x) / domain + 1;
+        return Math.log(normalizedX) / Math.log(base);
     }
 
     public void stimulate(boolean goodIfTrue) {
@@ -170,14 +171,14 @@ public class Simulator {
             }
         }
         neuronList.sort(Neuron::compareTo);
-        int neuronOnEnd = (int)(0.01 * neuronList.size());
+        int neuronOnEnd = 1;
         if (goodIfTrue) { // Neurons with low stake are punished
             for (int i = 0; i < neuronOnEnd; i++) {
-                setRandomIncomingNeuronsAndWeights(neuronList.get(i));
+                neuronList.get(i).changeOneThing();
             }
         } else { // Neurons with high stake are punished
             for (int i = neuronList.size() - neuronOnEnd; i < neuronList.size(); i++) {
-                setRandomIncomingNeuronsAndWeights(neuronList.get(i));
+                neuronList.get(i).changeOneThing();
             }
         }
         neuronList.forEach((n) -> n.clearStake());
@@ -200,6 +201,35 @@ public class Simulator {
             this.col = col;
             stake = 0;
             nextNeuronIndex = 0;
+        }
+
+        public void changeOneThing() {
+            switch((int)(Math.random() * 3)) {
+                case 0:
+                    // Change a random incoming neuron
+                    if (incomingNeurons.length > 0) {
+                        int randIndex = (int)(Math.random() * incomingNeurons.length);
+                        int randRow = (int) (Math.random() * simulator.NEURONS.length);
+                        int randCol = (int) (Math.random() * simulator.NEURONS[0].length);
+                        incomingNeurons[randIndex] = simulator.NEURONS[randRow][randCol];
+                    }
+                    break;
+                case 1:
+                    // Flip a random weight
+                    if (weights.length > 0) {
+                        int randIndex = (int)(Math.random() * weights.length);
+                        weights[randIndex] = !weights[randIndex];
+                    }
+                    break;
+                case 2:
+                    // Change nextNuronIndex to a random position
+                    if (incomingNeurons.length > 0) {
+                        int temp = nextNeuronIndex;
+                        do {
+                            nextNeuronIndex = (int)(Math.random() * incomingNeurons.length);
+                        } while (nextNeuronIndex == temp);
+                    }
+            }
         }
 
         public void setIncomingNeuronsAndWeights(@NotNull Neuron[] incomingNeurons, @NotNull boolean[] weights) {
