@@ -118,7 +118,7 @@ public class AutoGrader extends Simulator {
     }
 
     public int getChecksUntilResize() {
-        return Math.max(0, 1000000 - timeSinceMeetingHighScore);
+        return Math.max(0, 100000 - timeSinceMeetingHighScore);
     }
 
     private void resetProgress() {
@@ -126,7 +126,7 @@ public class AutoGrader extends Simulator {
     }
 
     private boolean shouldExpandNetwork() {
-        return timeSinceMeetingHighScore >= 1000000;
+        return timeSinceMeetingHighScore >= 100000;
     }
 
     private void expandNetwork() {
