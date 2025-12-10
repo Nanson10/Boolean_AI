@@ -11,7 +11,7 @@ public class Simulator {
     protected int runNeuronsPerCycle;
     private final int NUM_INCOMING_NEURONS;
     protected BooleanMatrixDisplay display;
-    private int currentIteration;
+    protected int currentIteration;
     private int highlightCount;
     private StringBuilder changedCells;
 
@@ -128,7 +128,7 @@ public class Simulator {
 
     public boolean[] runCycle(int lengthOfResults) {
         initializeCycle();
-        executeNeuronComputations();
+        executeNeuronComputations(lengthOfResults);
         highlightResults(lengthOfResults);
         return collectResults(lengthOfResults);
     }
@@ -139,13 +139,13 @@ public class Simulator {
         updateDisplay();
     }
 
-    private void executeNeuronComputations() {
+    protected void executeNeuronComputations(int lengthOfResults) {
         for (int n = 0; n < NEURONS.length * NEURONS.length; n++) {
             for (int i = 0; i < NEURONS.length; i++) {
                 for (int j = 0; j < NEURONS[0].length; j++) {
                     if ((int) (Math.random() * 10000) == 0)
                         NEURONS[i][j].changeOneThing();
-                    NEURONS[i][j].computeActivation();
+                    NEURONS[i][j].computeActivation(false);
                     currentIteration++;
                 }
             }
@@ -324,12 +324,12 @@ public class Simulator {
             return incomingNeurons[nextNeuronIndex++];
         }
 
-        public boolean computeActivation() {
+        public boolean computeActivation(boolean bit) {
             for (Neuron neuron : incomingNeurons)
                 neuron.stake++; // Increase the stake for neurons that contribute to the state of this neuron.
             int threshold = calculateThreshold();
             int activationSum = calculateActivationSum(threshold);
-            return updateActivationState(activationSum >= threshold);
+            return updateActivationState(activationSum + (bit ? 1 : 0) >= threshold);
         }
 
         private int calculateThreshold() {

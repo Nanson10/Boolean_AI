@@ -22,6 +22,27 @@ public class AutoGrader extends Simulator {
     }
 
     @Override
+    protected void executeNeuronComputations(int lengthOfResults) {
+        // Get the target character and convert it to bits
+        char target = (char) ('A' + index);
+        boolean[] targetBits = Utilities.charToBooleanArray(target, lengthOfResults);
+
+        for (int n = 0; n < NEURONS.length * NEURONS.length; n++) {
+            for (int i = 0; i < NEURONS.length; i++) {
+                for (int j = 0; j < NEURONS[0].length; j++) {
+                    if ((int) (Math.random() * 10000) == 0)
+                        NEURONS[i][j].changeOneThing();
+
+                    // For second row (i == 1), pass the target bit to influence activation
+                    boolean bit = (i == 1 && j < targetBits.length) ? targetBits[j] : false;
+                    NEURONS[i][j].computeActivation(bit);
+                    currentIteration++;
+                }
+            }
+        }
+    }
+
+    @Override
     public boolean[] runCycle(int lengthOfResults) {
         boolean[] results = super.runCycle(lengthOfResults);
         char answer = Utilities.booleanArrayToChar(results);
