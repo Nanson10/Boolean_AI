@@ -7,7 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 
 public class BooleanMatrixDisplay {
-    
+
     private static volatile JFrame frame;
     private static volatile JPanel gridPanel;
     private static volatile JPanel[][] cells;
@@ -15,7 +15,8 @@ public class BooleanMatrixDisplay {
     private static volatile Simulator simulator;
     private static volatile AutoGrader autoGrader;
     private static volatile JButton rewardButton, punishButton, runCycleButton;
-    private static volatile JLabel statusLabel, activationPercentageLabel, thresholdMultiplierLabel, characterDisplayLabel, progressLabel;
+    private static volatile JLabel statusLabel, activationPercentageLabel, thresholdMultiplierLabel,
+            characterDisplayLabel, progressLabel;
     private static volatile int currentHighlightCount = 0;
     private static volatile boolean cycleRunning = false;
     private static volatile boolean autoCycling = false;
@@ -41,8 +42,11 @@ public class BooleanMatrixDisplay {
     /**
      * Update the display by pulling data from the simulator.
      * This is called by the Simulator when it needs to refresh the display.
-     * @param changesString A string containing changed cells in format "row,col,activation;row,col,activation"
-     *                      If empty, pulls all data from simulator for a full update.
+     * 
+     * @param changesString A string containing changed cells in format
+     *                      "row,col,activation;row,col,activation"
+     *                      If empty, pulls all data from simulator for a full
+     *                      update.
      */
     public void update(String changesString) {
         if (changesString == null || changesString.isEmpty()) {
@@ -53,9 +57,9 @@ public class BooleanMatrixDisplay {
             double activationPercentage = simulator.getActivationPercentage();
             double thresholdMultiplier = simulator.getActivationThresholdMultiplier();
             int highlightCount = simulator.getHighlightCount();
-            
-            displayMatrix(matrix, currentIteration, totalIterations, activationPercentage, 
-                         thresholdMultiplier, highlightCount);
+
+            displayMatrix(matrix, currentIteration, totalIterations, activationPercentage,
+                    thresholdMultiplier, highlightCount);
         } else {
             // Incremental update - only update changed cells
             updateChangedCells(changesString);
@@ -70,17 +74,18 @@ public class BooleanMatrixDisplay {
     private void updateChangedCells(String changesString) {
         String[] cellChanges = changesString.split(Constants.CELL_DELIMITER);
         int highlightCount = simulator.getHighlightCount();
-        
+
         for (String cellChange : cellChanges) {
-            if (cellChange.isEmpty()) continue;
-            
+            if (cellChange.isEmpty())
+                continue;
+
             String[] parts = cellChange.split(Constants.FIELD_DELIMITER);
             if (parts.length == 3) {
                 try {
                     int row = Integer.parseInt(parts[0]);
                     int col = Integer.parseInt(parts[1]);
                     boolean activated = parts[2].equals("1");
-                    
+
                     // Update the cell in the UI with highlighting info
                     updateCellWithHighlight(row, col, activated, highlightCount);
                 } catch (NumberFormatException e) {
@@ -97,30 +102,30 @@ public class BooleanMatrixDisplay {
         if (cells == null || row < 0 || row >= rows || col < 0 || col >= cols) {
             return; // Silently ignore if cells not initialized or out of bounds
         }
-        
+
         boolean isHighlighted = isHighlighted(row, col, highlightCount);
-        
+
         SwingUtilities.invokeLater(() -> {
             if (cells != null && cells[row] != null && cells[row][col] != null) {
                 cells[row][col].setBackground(value ? Color.GREEN : Color.WHITE);
                 cells[row][col].setBorder(BorderFactory.createLineBorder(
-                    isHighlighted ? Color.BLUE : Color.BLACK,
-                    isHighlighted ? 3 : 1
-                ));
+                        isHighlighted ? Color.BLUE : Color.BLACK,
+                        isHighlighted ? 3 : 1));
                 cells[row][col].repaint();
             }
         });
     }
 
     /**
-     * Update only the metadata labels (iteration, activation %, threshold) without redrawing cells.
+     * Update only the metadata labels (iteration, activation %, threshold) without
+     * redrawing cells.
      */
     private void updateMetadata() {
         int currentIteration = simulator.getCurrentIteration();
         int totalIterations = simulator.getTotalIterations();
         double activationPercentage = simulator.getActivationPercentage();
         double thresholdMultiplier = simulator.getActivationThresholdMultiplier();
-        
+
         SwingUtilities.invokeLater(() -> {
             if (totalIterations > 0 && statusLabel != null) {
                 statusLabel.setText(String.format("Iteration: %d / %d", currentIteration, totalIterations));
@@ -131,40 +136,41 @@ public class BooleanMatrixDisplay {
             if (thresholdMultiplierLabel != null) {
                 thresholdMultiplierLabel.setText(String.format("Threshold: %.3f", thresholdMultiplier));
             }
-            
+
             // Update progress label if AutoGrader is active
             if (autoGrader != null && progressLabel != null) {
                 String currentProgress = autoGrader.getCurrentProgress();
                 String furthestProgress = autoGrader.getFurthestProgress();
-                progressLabel.setText(String.format("Current: %s | Furthest: %s", 
-                    currentProgress, furthestProgress));
+                progressLabel.setText(String.format("Current: %s | Furthest: %s",
+                        currentProgress, furthestProgress));
             }
         });
     }
-    
+
     public void displayMatrix(@NotNull boolean[][] matrix, int currentIteration, int totalIterations,
-                                    double activationPercentage, double thresholdMultiplier, int highlightCount) {
+            double activationPercentage, double thresholdMultiplier, int highlightCount) {
         Objects.requireNonNull(matrix, "Matrix cannot be null");
-        if (matrix.length == 0 || matrix[0].length == 0) throw new IllegalArgumentException("Matrix cannot be empty");
-        
+        if (matrix.length == 0 || matrix[0].length == 0)
+            throw new IllegalArgumentException("Matrix cannot be empty");
+
         for (int i = 1; i < matrix.length; i++) {
             if (matrix[i].length != matrix[0].length) {
                 throw new IllegalArgumentException("Matrix must have regular dimensions");
             }
         }
-        
+
         final boolean[][] matrixCopy = new boolean[matrix.length][matrix[0].length];
         for (int i = 0; i < matrix.length; i++) {
             System.arraycopy(matrix[i], 0, matrixCopy[i], 0, matrix[0].length);
         }
-        
+
         if (SwingUtilities.isEventDispatchThread()) {
-            displayMatrixOnEDT(matrixCopy, matrix.length, matrix[0].length, currentIteration, 
-                             totalIterations, activationPercentage, thresholdMultiplier, highlightCount);
+            displayMatrixOnEDT(matrixCopy, matrix.length, matrix[0].length, currentIteration,
+                    totalIterations, activationPercentage, thresholdMultiplier, highlightCount);
         } else {
             try {
                 SwingUtilities.invokeAndWait(() -> displayMatrixOnEDT(matrixCopy, matrix.length, matrix[0].length,
-                    currentIteration, totalIterations, activationPercentage, thresholdMultiplier, highlightCount));
+                        currentIteration, totalIterations, activationPercentage, thresholdMultiplier, highlightCount));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Thread interrupted while updating display", e);
@@ -175,33 +181,35 @@ public class BooleanMatrixDisplay {
         // Update currentHighlightCount on EDT to avoid race condition
         SwingUtilities.invokeLater(() -> currentHighlightCount = highlightCount);
     }
-    
-    public void displayMatrixPreserveHighlight(@NotNull boolean[][] matrix, int currentIteration, 
-                                                      int totalIterations, double activationPercentage, 
-                                                      double thresholdMultiplier) {
-        displayMatrix(matrix, currentIteration, totalIterations, activationPercentage, thresholdMultiplier, currentHighlightCount);
+
+    public void displayMatrixPreserveHighlight(@NotNull boolean[][] matrix, int currentIteration,
+            int totalIterations, double activationPercentage,
+            double thresholdMultiplier) {
+        displayMatrix(matrix, currentIteration, totalIterations, activationPercentage, thresholdMultiplier,
+                currentHighlightCount);
     }
-    
-    private void displayMatrixOnEDT(boolean[][] matrix, int matrixRows, int matrixCols, 
-                                          int currentIteration, int totalIterations,
-                                          double activationPercentage, double thresholdMultiplier, int highlightCount) {
+
+    private void displayMatrixOnEDT(boolean[][] matrix, int matrixRows, int matrixCols,
+            int currentIteration, int totalIterations,
+            double activationPercentage, double thresholdMultiplier, int highlightCount) {
         synchronized (INIT_LOCK) {
-            if (frame == null) initializeFrame();
+            if (frame == null)
+                initializeFrame();
         }
-        
+
         if (rows != matrixRows || cols != matrixCols || gridPanel == null || cells == null) {
             rows = matrixRows;
             cols = matrixCols;
-            
+
             if (gridPanel != null) {
                 frame.remove(gridPanel);
                 gridPanel.removeAll();
             }
-            
+
             gridPanel = new JPanel(new GridLayout(rows, cols, 2, 2));
             gridPanel.setBackground(Color.DARK_GRAY);
             cells = new JPanel[rows][cols];
-            
+
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < cols; j++) {
                     cells[i][j] = new JPanel();
@@ -210,17 +218,16 @@ public class BooleanMatrixDisplay {
             }
             frame.add(gridPanel, BorderLayout.CENTER);
         }
-        
+
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 cells[i][j].setBackground(matrix[i][j] ? Color.GREEN : Color.WHITE);
                 cells[i][j].setBorder(BorderFactory.createLineBorder(
-                    isHighlighted(i, j, highlightCount) ? Color.BLUE : Color.BLACK,
-                    isHighlighted(i, j, highlightCount) ? 3 : 1
-                ));
+                        isHighlighted(i, j, highlightCount) ? Color.BLUE : Color.BLACK,
+                        isHighlighted(i, j, highlightCount) ? 3 : 1));
             }
         }
-        
+
         if (totalIterations > 0 && statusLabel != null) {
             statusLabel.setText(String.format("Iteration: %d / %d", currentIteration, totalIterations));
         }
@@ -230,44 +237,46 @@ public class BooleanMatrixDisplay {
         if (thresholdMultiplierLabel != null) {
             thresholdMultiplierLabel.setText(String.format("Threshold: %.3f", thresholdMultiplier));
         }
-        
+
         // Update progress label if AutoGrader is active
         if (autoGrader != null && progressLabel != null) {
             String currentProgress = autoGrader.getCurrentProgress();
             String furthestProgress = autoGrader.getFurthestProgress();
-            progressLabel.setText(String.format("Current: %s | Furthest: %s", 
-                currentProgress, furthestProgress));
+            progressLabel.setText(String.format("Current: %s | Furthest: %s",
+                    currentProgress, furthestProgress));
         }
-        
+
         frame.revalidate();
         frame.repaint();
         frame.setVisible(true);
     }
-    
+
     private boolean isHighlighted(int row, int col, int highlightCount) {
-        if (highlightCount <= 0) return false;
+        if (highlightCount <= 0)
+            return false;
         int index = 0;
-        for (int i = rows - 1; i >= 0 && index < highlightCount; i--) {
-            for (int j = cols - 1; j >= 0 && index < highlightCount; j--) {
-                if (i == row && j == col) return true;
+        for (int i = 0; i < rows && index < highlightCount; i++) {
+            for (int j = 0; j < cols && index < highlightCount; j++) {
+                if (i == row && j == col)
+                    return true;
                 index++;
             }
         }
         return false;
     }
-    
+
     private void initializeFrame() {
         frame = new JFrame("Boolean Matrix Display");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
-        
+
         runCycleButton = new JButton("Run Cycle");
         runCycleButton.addActionListener(e -> new Thread(() -> {
             synchronized (CYCLE_LOCK) {
                 if (simulator != null && !cycleRunning && !autoCycling) {
                     cycleRunning = true;
                     updateButtonStates();
-                    
+
                     try {
                         boolean[] result = simulator.runCycle(7);
                         displayCharacterFromBooleanArray(result);
@@ -278,9 +287,9 @@ public class BooleanMatrixDisplay {
                 }
             }
         }).start());
-        
+
         rewardButton = new JButton("Reward");
-        rewardButton.addActionListener(e -> { 
+        rewardButton.addActionListener(e -> {
             if (simulator != null && !cycleRunning && !autoCycling) {
                 synchronized (CYCLE_LOCK) {
                     if (!cycleRunning && !autoCycling) {
@@ -289,9 +298,9 @@ public class BooleanMatrixDisplay {
                 }
             }
         });
-        
+
         punishButton = new JButton("Punish");
-        punishButton.addActionListener(e -> { 
+        punishButton.addActionListener(e -> {
             if (simulator != null && !cycleRunning && !autoCycling) {
                 synchronized (CYCLE_LOCK) {
                     if (!cycleRunning && !autoCycling) {
@@ -300,77 +309,128 @@ public class BooleanMatrixDisplay {
                 }
             }
         });
-        
+
         statusLabel = new JLabel("Iteration: 0 / 0");
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        
+
         activationPercentageLabel = new JLabel("Activation: 0.00%");
         activationPercentageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        
+
         thresholdMultiplierLabel = new JLabel("Threshold: 0.000");
         thresholdMultiplierLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        
+
         characterDisplayLabel = new JLabel("Character: -");
         characterDisplayLabel.setHorizontalAlignment(SwingConstants.CENTER);
         characterDisplayLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
-        
+
         progressLabel = new JLabel("Progress: - | Furthest: -");
         progressLabel.setHorizontalAlignment(SwingConstants.CENTER);
         progressLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
-        
+
         // Create control panel with stacked layout
         JPanel controlPanel = new JPanel();
         controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
         controlPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        
+
         // Button row
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         buttonPanel.add(runCycleButton);
         buttonPanel.add(rewardButton);
         buttonPanel.add(punishButton);
-        
+
         // Status row
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 2));
         statusPanel.add(statusLabel);
         statusPanel.add(activationPercentageLabel);
         statusPanel.add(thresholdMultiplierLabel);
-        
+
         // Output row
         JPanel outputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 2));
         outputPanel.add(characterDisplayLabel);
-        
+
         // Add panels to control panel
         controlPanel.add(buttonPanel);
         controlPanel.add(statusPanel);
         controlPanel.add(outputPanel);
-        
+
         // Only show progress label if AutoGrader is active
         if (autoGrader != null) {
             JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 2));
             progressPanel.add(progressLabel);
             controlPanel.add(progressPanel);
         }
-        
+
         frame.add(controlPanel, BorderLayout.SOUTH);
-        
+
         updateButtonStates();
         update(""); // Use the new update method with empty string for full initial update
-        
+
         frame.pack(); // Auto-size window based on component preferred sizes
         frame.setLocationRelativeTo(null); // Center on screen
     }
-    
+
     private void updateButtonStates() {
         SwingUtilities.invokeLater(() -> {
             boolean shouldEnable = !cycleRunning && autoGrader == null;
-            if (runCycleButton != null) runCycleButton.setEnabled(shouldEnable);
-            if (rewardButton != null) rewardButton.setEnabled(shouldEnable);
-            if (punishButton != null) punishButton.setEnabled(shouldEnable);
+            if (runCycleButton != null)
+                runCycleButton.setEnabled(shouldEnable);
+            if (rewardButton != null)
+                rewardButton.setEnabled(shouldEnable);
+            if (punishButton != null)
+                punishButton.setEnabled(shouldEnable);
         });
     }
-    
+
+    /**
+     * Reinitialize the display with a new simulator.
+     * This clears the current display and sets up for the new simulator.
+     * 
+     * @param newSimulator The new simulator to display
+     */
+    public void reinitialize(@NotNull Simulator newSimulator) {
+        // Stop any ongoing auto-cycling
+        if (autoCycling) {
+            stopAutoCycling();
+        }
+
+        // Update simulator reference
+        simulator = newSimulator;
+        if (newSimulator instanceof AutoGrader) {
+            autoGrader = (AutoGrader) newSimulator;
+        } else {
+            autoGrader = null;
+        }
+
+        // Set this display on the new simulator
+        simulator.setDisplay(this);
+
+        // Reset grid to force recreation with new dimensions
+        SwingUtilities.invokeLater(() -> {
+            if (gridPanel != null) {
+                frame.remove(gridPanel);
+                gridPanel = null;
+                cells = null;
+                rows = 0;
+                cols = 0;
+            }
+
+            // Trigger a full update to recreate the grid
+            update("");
+
+            // Repack and recenter the window
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+
+            // Restart auto-cycling if it's an AutoGrader
+            if (autoGrader != null) {
+                startAutoCycling();
+            }
+        });
+    }
+
     public void updateCell(int row, int col, boolean value) {
-        if (cells == null) throw new IllegalStateException("No matrix has been displayed yet");
+        if (cells == null)
+            throw new IllegalStateException("No matrix has been displayed yet");
         if (row < 0 || row >= rows || col < 0 || col >= cols) {
             throw new IndexOutOfBoundsException("Cell coordinates out of bounds");
         }
@@ -381,7 +441,7 @@ public class BooleanMatrixDisplay {
             }
         });
     }
-    
+
     public void closeDisplay() {
         stopAutoCycling();
         SwingUtilities.invokeLater(() -> {
@@ -393,21 +453,22 @@ public class BooleanMatrixDisplay {
             }
         });
     }
-    
+
     private void startAutoCycling() {
         if (simulator == null) {
             return; // Can't auto-cycle without a simulator
         }
-        
+
         autoCycling = true;
         autoCycleThread = new Thread(() -> {
             while (autoCycling) {
                 synchronized (CYCLE_LOCK) {
-                    if (!autoCycling) break; // Double-check after acquiring lock
-                    
+                    if (!autoCycling)
+                        break; // Double-check after acquiring lock
+
                     cycleRunning = true;
                     updateButtonStates();
-                    
+
                     try {
                         boolean[] result = simulator.runCycle(7);
                         displayCharacterFromBooleanArray(result);
@@ -416,7 +477,7 @@ public class BooleanMatrixDisplay {
                         updateButtonStates();
                     }
                 }
-                
+
                 try {
                     Thread.sleep(100); // Small delay between cycles to prevent overwhelming the system
                 } catch (InterruptedException e) {
@@ -427,7 +488,7 @@ public class BooleanMatrixDisplay {
         }, "AutoCycle-Thread");
         autoCycleThread.start();
     }
-    
+
     private void stopAutoCycling() {
         autoCycling = false;
         Thread threadToJoin = autoCycleThread; // Local copy to avoid race
@@ -446,12 +507,12 @@ public class BooleanMatrixDisplay {
             System.err.println("Warning: Invalid boolean array length: " + arr.length);
             return;
         }
-        
+
         char character = Utilities.booleanArrayToChar(arr);
         SwingUtilities.invokeLater(() -> {
             if (characterDisplayLabel != null) {
-                characterDisplayLabel.setText(String.format("Character: '%c' (0x%04X, %d-bit)", 
-                    character, (int) character, arr.length));
+                characterDisplayLabel.setText(String.format("Character: '%c' (0x%04X, %d-bit)",
+                        character, (int) character, arr.length));
             }
         });
     }
