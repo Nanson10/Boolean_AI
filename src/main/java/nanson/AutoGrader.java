@@ -173,6 +173,7 @@ public class AutoGrader extends Simulator {
 
     private void resetProgress() {
         currentProgress = "";
+        index = 0;
     }
 
     private boolean shouldExpandNetwork() {
