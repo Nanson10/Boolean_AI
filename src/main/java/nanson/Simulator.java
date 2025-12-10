@@ -199,13 +199,13 @@ public class Simulator {
     }
 
     private void adjustThresholdMultiplier() {
-        // activationThresholdMultiplier +=
-        // LogarithmicSlowingFactor(activationPercentage - 0.5, 1, 10)
-        // * (activationPercentage - 0.5);
+        activationThresholdMultiplier += logarithmicSlowingFactor(activationPercentage - 0.5, 1, 10)
+                * (activationPercentage - 0.5) * 0.00001;
+        activationThresholdMultiplier += (0.5 - activationThresholdMultiplier) * 0.0000005;
         // activationThresholdMultiplier += powerSlowingFactor(activationPercentage -
         // 0.5, 5,
         // 1.5) * (activationPercentage - 0.5);
-        activationThresholdMultiplier += (activationPercentage - 0.5) * 0.00001;
+        // activationThresholdMultiplier += (activationPercentage - 0.5) * 0.00001;
     }
 
     public double powerSlowingFactor(double x, double domain, double power) {
@@ -378,7 +378,7 @@ public class Simulator {
         }
 
         private int calculateThreshold() {
-            return (int) (simulator.getActivationThresholdMultiplier() * incomingNeurons.length);
+            return (int) Math.round(simulator.getActivationThresholdMultiplier() * incomingNeurons.length);
         }
 
         private int calculateActivationSum(int threshold) {
