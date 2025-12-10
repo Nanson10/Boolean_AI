@@ -18,7 +18,8 @@ public class Simulator {
     private Neuron nextNeuron;
 
     public Simulator() {
-        this(Constants.DEFAULT_MATRIX_WIDTH, Constants.DEFAULT_MATRIX_HEIGHT, Constants.DEFAULT_RUN_NEURONS_PER_CYCLE, Constants.DEFAULT_NUM_INCOMING_NEURONS);
+        this(Constants.DEFAULT_MATRIX_WIDTH, Constants.DEFAULT_MATRIX_HEIGHT, Constants.DEFAULT_RUN_NEURONS_PER_CYCLE,
+                Constants.DEFAULT_NUM_INCOMING_NEURONS);
     }
 
     public Simulator(int width, int height, int runNeuronsPerCycle, int numIncomingNeurons) {
@@ -76,10 +77,10 @@ public class Simulator {
             changedCells.append(Constants.CELL_DELIMITER);
         }
         changedCells.append(row)
-                    .append(Constants.FIELD_DELIMITER)
-                    .append(col)
-                    .append(Constants.FIELD_DELIMITER)
-                    .append(activated ? "1" : "0");
+                .append(Constants.FIELD_DELIMITER)
+                .append(col)
+                .append(Constants.FIELD_DELIMITER)
+                .append(activated ? "1" : "0");
     }
 
     private void clearChanges() {
@@ -115,7 +116,7 @@ public class Simulator {
         currentIteration = 0;
         totalIterations = RUN_NEURONS_PER_CYCLE;
         updateDisplay();
-        
+
         for (int i = 0; i < RUN_NEURONS_PER_CYCLE; i++) {
             if (nextNeuron == null)
                 nextNeuron = NEURONS[0][0];
@@ -124,11 +125,11 @@ public class Simulator {
             currentIteration++;
             updateDisplay();
         }
-        
+
         // Highlight the result cells
         highlightCount = lengthOfResults;
         updateDisplay();
-        
+
         boolean[] results = new boolean[lengthOfResults];
         int index = 0;
         for (int i = NEURONS.length - 1; i >= 0 && index < lengthOfResults; i--) {
@@ -154,7 +155,9 @@ public class Simulator {
             }
         }
         activationPercentage /= (NEURONS.length * NEURONS[0].length);
-        // activationThresholdMultiplier += LogarithmicSlowingFactor(activationPercentage - 0.5, 1, 10) * (activationPercentage - 0.5);
+        // activationThresholdMultiplier +=
+        // LogarithmicSlowingFactor(activationPercentage - 0.5, 1, 10) *
+        // (activationPercentage - 0.5);
         activationThresholdMultiplier = activationPercentage;
     }
 
@@ -170,21 +173,28 @@ public class Simulator {
                 neuronList.add(neuron);
             }
         }
+
         neuronList.sort(Neuron::compareTo);
-        int neuronOnEnd = 1;
         if (goodIfTrue) { // Neurons with low stake are punished
-            for (int i = 0; i < neuronOnEnd; i++) {
-                neuronList.get(i).changeOneThing();
-            }
+            int lowestStake = neuronList.get(0).stake;
+            for (int i = 0; i < neuronList.size(); i--)
+                if (neuronList.get(i).stake == lowestStake) {
+                    neuronList.get(i).changeOneThing();
+                } else
+                    break;
         } else { // Neurons with high stake are punished
-            for (int i = neuronList.size() - neuronOnEnd; i < neuronList.size(); i++) {
-                neuronList.get(i).changeOneThing();
-            }
+            int highestStake = neuronList.get(neuronList.size() - 1).stake;
+            for (int i = neuronList.size() - 1; i >= neuronList.size(); i--)
+                if (neuronList.get(i).stake == highestStake) {
+                    neuronList.get(i).changeOneThing();
+                } else {
+                    break;
+                }
+            neuronList.forEach((n) -> n.clearStake());
         }
-        neuronList.forEach((n) -> n.clearStake());
     }
 
-    private static class Neuron implements Comparable<Neuron>{
+    private static class Neuron implements Comparable<Neuron> {
         private boolean activated;
         private Neuron[] incomingNeurons;
         private boolean[] weights;
@@ -204,11 +214,11 @@ public class Simulator {
         }
 
         public void changeOneThing() {
-            switch((int)(Math.random() * 3)) {
+            switch ((int) (Math.random() * 3)) {
                 case 0:
                     // Change a random incoming neuron
                     if (incomingNeurons.length > 0) {
-                        int randIndex = (int)(Math.random() * incomingNeurons.length);
+                        int randIndex = (int) (Math.random() * incomingNeurons.length);
                         int randRow = (int) (Math.random() * simulator.NEURONS.length);
                         int randCol = (int) (Math.random() * simulator.NEURONS[0].length);
                         incomingNeurons[randIndex] = simulator.NEURONS[randRow][randCol];
@@ -217,7 +227,7 @@ public class Simulator {
                 case 1:
                     // Flip a random weight
                     if (weights.length > 0) {
-                        int randIndex = (int)(Math.random() * weights.length);
+                        int randIndex = (int) (Math.random() * weights.length);
                         weights[randIndex] = !weights[randIndex];
                     }
                     break;
@@ -226,7 +236,7 @@ public class Simulator {
                     if (incomingNeurons.length > 0) {
                         int temp = nextNeuronIndex;
                         do {
-                            nextNeuronIndex = (int)(Math.random() * incomingNeurons.length);
+                            nextNeuronIndex = (int) (Math.random() * incomingNeurons.length);
                         } while (nextNeuronIndex == temp);
                     }
             }
@@ -247,10 +257,10 @@ public class Simulator {
 
         public boolean computeActivation() {
             stake++;
-            int threshold = (int)(simulator.getActivationThresholdMultiplier() * incomingNeurons.length);
+            int threshold = (int) (simulator.getActivationThresholdMultiplier() * incomingNeurons.length);
             int activationSum = 0;
             boolean oldActivated = activated;
-            
+
             for (int i = 0; i < incomingNeurons.length && i < weights.length; i++) {
                 if (weights[i] && incomingNeurons[i].activated) {
                     activationSum++;
