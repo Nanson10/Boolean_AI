@@ -194,10 +194,15 @@ public class Simulator {
         // activationThresholdMultiplier +=
         // LogarithmicSlowingFactor(activationPercentage - 0.5, 1, 10)
         // * (activationPercentage - 0.5);
-        activationThresholdMultiplier = activationPercentage;
+        activationThresholdMultiplier = powerSlowingFactor(activationPercentage - 0.5, 0.5, 0.5);
     }
 
-    public double LogarithmicSlowingFactor(double x, int domain, double base) {
+    public double powerSlowingFactor(double x, double domain, double power) {
+        double normalizedX = Math.abs(x) / domain;
+        return Math.min(1, Math.pow(normalizedX, power));
+    }
+
+    public double logarithmicSlowingFactor(double x, int domain, double base) {
         double normalizedX = Math.abs(x) / domain + 1;
         return Math.log(normalizedX) / Math.log(base);
     }
