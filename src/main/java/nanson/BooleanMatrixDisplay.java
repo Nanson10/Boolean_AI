@@ -16,7 +16,7 @@ public class BooleanMatrixDisplay {
     private static volatile AutoGrader autoGrader;
     private static volatile JButton rewardButton, punishButton, runCycleButton;
     private static volatile JLabel statusLabel, activationPercentageLabel, thresholdMultiplierLabel,
-            characterDisplayLabel, progressLabel;
+            characterDisplayLabel, progressLabel, distanceLabel, resizeCountdownLabel;
     private static volatile int currentHighlightCount = 0;
     private static volatile boolean cycleRunning = false;
     private static volatile boolean autoCycling = false;
@@ -103,14 +103,26 @@ public class BooleanMatrixDisplay {
             return; // Silently ignore if cells not initialized or out of bounds
         }
 
-        boolean isHighlighted = isHighlighted(row, col, highlightCount);
+        boolean isBlueHighlighted = isHighlighted(row, col, highlightCount);
+        boolean isWrongBit = isIncorrectBit(row, col, value, highlightCount);
 
         SwingUtilities.invokeLater(() -> {
             if (cells != null && cells[row] != null && cells[row][col] != null) {
-                cells[row][col].setBackground(value ? Color.GREEN : Color.WHITE);
-                cells[row][col].setBorder(BorderFactory.createLineBorder(
-                        isHighlighted ? Color.BLUE : Color.BLACK,
-                        isHighlighted ? 3 : 1));
+                // Set background color: red for incorrect bits, green for activated, white for
+                // inactive
+                Color backgroundColor;
+                if (isWrongBit) {
+                    backgroundColor = Color.RED;
+                } else {
+                    backgroundColor = value ? Color.GREEN : Color.WHITE;
+                }
+                cells[row][col].setBackground(backgroundColor);
+
+                // Blue border for output region
+                Color borderColor = isBlueHighlighted ? Color.BLUE : Color.BLACK;
+                int borderWidth = isBlueHighlighted ? 3 : 1;
+
+                cells[row][col].setBorder(BorderFactory.createLineBorder(borderColor, borderWidth));
                 cells[row][col].repaint();
             }
         });
@@ -121,14 +133,13 @@ public class BooleanMatrixDisplay {
      * redrawing cells.
      */
     private void updateMetadata() {
-        int currentIteration = simulator.getCurrentIteration();
         int totalIterations = simulator.getTotalIterations();
         double activationPercentage = simulator.getActivationPercentage();
         double thresholdMultiplier = simulator.getActivationThresholdMultiplier();
 
         SwingUtilities.invokeLater(() -> {
             if (totalIterations > 0 && statusLabel != null) {
-                statusLabel.setText(String.format("Iteration: %d / %d", currentIteration, totalIterations));
+                statusLabel.setText(String.format("Iterations per update: %d", totalIterations));
             }
             if (activationPercentageLabel != null) {
                 activationPercentageLabel.setText(String.format("Activation: %.2f%%", activationPercentage * 100));
@@ -143,6 +154,22 @@ public class BooleanMatrixDisplay {
                 String furthestProgress = autoGrader.getFurthestProgress();
                 progressLabel.setText(String.format("Current: %s | Furthest: %s",
                         currentProgress, furthestProgress));
+            }
+
+            // Update distance label if AutoGrader is active
+            if (autoGrader != null && distanceLabel != null) {
+                int currentDistance = autoGrader.getCurrentDistance();
+                char goal = autoGrader.getGoal();
+                int previousDistance = autoGrader.getLastAnswerDistance();
+                distanceLabel
+                        .setText(String.format("Goal: '%c' | Current Distance: %d | Previous Distance: %d | Target: 0",
+                                goal, currentDistance, previousDistance));
+            }
+
+            // Update resize countdown label if AutoGrader is active
+            if (autoGrader != null && resizeCountdownLabel != null) {
+                int checksUntilResize = autoGrader.getChecksUntilResize();
+                resizeCountdownLabel.setText(String.format("Checks Until Resize: %d", checksUntilResize));
             }
         });
     }
@@ -221,15 +248,30 @@ public class BooleanMatrixDisplay {
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                cells[i][j].setBackground(matrix[i][j] ? Color.GREEN : Color.WHITE);
-                cells[i][j].setBorder(BorderFactory.createLineBorder(
-                        isHighlighted(i, j, highlightCount) ? Color.BLUE : Color.BLACK,
-                        isHighlighted(i, j, highlightCount) ? 3 : 1));
+                boolean currentValue = matrix[i][j];
+                boolean isWrongBit = isIncorrectBit(i, j, currentValue, highlightCount);
+                boolean isBlueHighlighted = isHighlighted(i, j, highlightCount);
+
+                // Set background color: red for incorrect bits, green for activated, white for
+                // inactive
+                Color backgroundColor;
+                if (isWrongBit) {
+                    backgroundColor = Color.RED;
+                } else {
+                    backgroundColor = currentValue ? Color.GREEN : Color.WHITE;
+                }
+                cells[i][j].setBackground(backgroundColor);
+
+                // Blue border for output region
+                Color borderColor = isBlueHighlighted ? Color.BLUE : Color.BLACK;
+                int borderWidth = isBlueHighlighted ? 3 : 1;
+
+                cells[i][j].setBorder(BorderFactory.createLineBorder(borderColor, borderWidth));
             }
         }
 
         if (totalIterations > 0 && statusLabel != null) {
-            statusLabel.setText(String.format("Iteration: %d / %d", currentIteration, totalIterations));
+            statusLabel.setText(String.format("Iterations per update: %d", totalIterations));
         }
         if (activationPercentageLabel != null) {
             activationPercentageLabel.setText(String.format("Activation: %.2f%%", activationPercentage * 100));
@@ -246,6 +288,21 @@ public class BooleanMatrixDisplay {
                     currentProgress, furthestProgress));
         }
 
+        // Update distance label if AutoGrader is active
+        if (autoGrader != null && distanceLabel != null) {
+            int currentDistance = autoGrader.getCurrentDistance();
+            char goal = autoGrader.getGoal();
+            int previousDistance = autoGrader.getLastAnswerDistance();
+            distanceLabel.setText(String.format("Goal: '%c' | Current Distance: %d | Previous Distance: %d | Target: 0",
+                    goal, currentDistance, previousDistance));
+        }
+
+        // Update resize countdown label if AutoGrader is active
+        if (autoGrader != null && resizeCountdownLabel != null) {
+            int checksUntilResize = autoGrader.getChecksUntilResize();
+            resizeCountdownLabel.setText(String.format("Checks Until Resize: %d", checksUntilResize));
+        }
+
         frame.revalidate();
         frame.repaint();
         frame.setVisible(true);
@@ -259,6 +316,36 @@ public class BooleanMatrixDisplay {
             for (int j = 0; j < cols && index < highlightCount; j++) {
                 if (i == row && j == col)
                     return true;
+                index++;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if a cell has the incorrect bit value compared to the target.
+     * Returns true if the cell is in the output region and its value doesn't match
+     * the target.
+     */
+    private boolean isIncorrectBit(int row, int col, boolean currentValue, int highlightCount) {
+        if (autoGrader == null || highlightCount <= 0)
+            return false;
+
+        // Get the target character's boolean representation
+        char goal = autoGrader.getGoal();
+        boolean[] targetBits = Utilities.charToBooleanArray(goal, highlightCount);
+
+        // Calculate the index of this cell in the highlighted region
+        int index = 0;
+        for (int i = 0; i < rows && index < highlightCount; i++) {
+            for (int j = 0; j < cols && index < highlightCount; j++) {
+                if (i == row && j == col) {
+                    // This cell is in the highlighted region at position 'index'
+                    if (index < targetBits.length) {
+                        return currentValue != targetBits[index];
+                    }
+                    return false;
+                }
                 index++;
             }
         }
@@ -310,7 +397,7 @@ public class BooleanMatrixDisplay {
             }
         });
 
-        statusLabel = new JLabel("Iteration: 0 / 0");
+        statusLabel = new JLabel("Iterations per update: 0");
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         activationPercentageLabel = new JLabel("Activation: 0.00%");
@@ -326,6 +413,14 @@ public class BooleanMatrixDisplay {
         progressLabel = new JLabel("Progress: - | Furthest: -");
         progressLabel.setHorizontalAlignment(SwingConstants.CENTER);
         progressLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
+
+        distanceLabel = new JLabel("Goal: - | Current Distance: - | Previous Distance: - | Target: 0");
+        distanceLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        distanceLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
+
+        resizeCountdownLabel = new JLabel("Checks Until Resize: -");
+        resizeCountdownLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        resizeCountdownLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
 
         // Create control panel with stacked layout
         JPanel controlPanel = new JPanel();
@@ -358,6 +453,14 @@ public class BooleanMatrixDisplay {
             JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 2));
             progressPanel.add(progressLabel);
             controlPanel.add(progressPanel);
+
+            JPanel distancePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 2));
+            distancePanel.add(distanceLabel);
+            controlPanel.add(distancePanel);
+
+            JPanel resizePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 2));
+            resizePanel.add(resizeCountdownLabel);
+            controlPanel.add(resizePanel);
         }
 
         frame.add(controlPanel, BorderLayout.SOUTH);
@@ -365,7 +468,8 @@ public class BooleanMatrixDisplay {
         updateButtonStates();
         update(""); // Use the new update method with empty string for full initial update
 
-        frame.pack(); // Auto-size window based on component preferred sizes
+        // Maximize the window to fit the entire screen
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setLocationRelativeTo(null); // Center on screen
     }
 
@@ -417,8 +521,8 @@ public class BooleanMatrixDisplay {
             // Trigger a full update to recreate the grid
             update("");
 
-            // Repack and recenter the window
-            frame.pack();
+            // Maximize the window to fit the entire screen
+            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
             frame.setLocationRelativeTo(null);
 
             // Restart auto-cycling if it's an AutoGrader

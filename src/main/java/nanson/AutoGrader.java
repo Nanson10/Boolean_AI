@@ -5,7 +5,9 @@ public class AutoGrader extends Simulator {
     private String currentProgress = "";
 
     private int index = 0;
-    private int timeSinceBeatingHighScore = 0;
+    private int timeSinceMeetingHighScore = 0;
+    private int lastAnswerDistance = Integer.MAX_VALUE; // Distance from target in previous attempt
+    private char lastAnswer;
 
     public AutoGrader() {
         super();
@@ -23,11 +25,14 @@ public class AutoGrader extends Simulator {
     public boolean[] runCycle(int lengthOfResults) {
         boolean[] results = super.runCycle(lengthOfResults);
         char answer = Utilities.booleanArrayToChar(results);
+        lastAnswer = answer;
+        char target = (char) ('A' + index);
 
         if (isCorrectAnswer(answer)) {
             handleCorrectAnswer(answer);
+            lastAnswerDistance = 0; // Reset distance on correct answer
         } else {
-            handleIncorrectAnswer();
+            handleIncorrectAnswer(answer, target);
         }
 
         return results;
@@ -46,10 +51,10 @@ public class AutoGrader extends Simulator {
 
     private void updateProgress(char answer) {
         currentProgress += answer;
-        if (currentProgress.length() > furthestProgress.length()) {
+        if (currentProgress.length() >= furthestProgress.length())
+            timeSinceMeetingHighScore = 0;
+        if (currentProgress.length() > furthestProgress.length())
             furthestProgress = currentProgress;
-            timeSinceBeatingHighScore = 0;
-        }
     }
 
     private void advanceToNextLetter() {
@@ -63,23 +68,65 @@ public class AutoGrader extends Simulator {
         runNeuronsPerCycle = Math.max(NEURONS.length * NEURONS[0].length, runNeuronsPerCycle - 1);
     }
 
-    private void handleIncorrectAnswer() {
-        stimulate(false);
+    private void handleIncorrectAnswer(char answer, char target) {
+        int currentDistance = calculateDistance(answer, target);
+
+        // Reward if getting closer, punish if getting farther or staying same
+        if (currentDistance < lastAnswerDistance) {
+            stimulate(true); // Reward for improvement
+        } else {
+            stimulate(false); // Punish for no improvement or getting worse
+        }
+        lastAnswerDistance = currentDistance;
         resetProgress();
-        timeSinceBeatingHighScore++;
+        timeSinceMeetingHighScore++;
 
         if (shouldExpandNetwork()) {
             expandNetwork();
         }
     }
 
+    /**
+     * Calculate the distance between the answer and target character.
+     * Uses Hamming distance - the number of bit flips needed to transform
+     * the answer character into the target character.
+     */
+    private int calculateDistance(char answer, char target) {
+        // XOR the two characters to find differing bits
+        int xor = answer ^ target;
+
+        // Count the number of 1s in the XOR result (number of differing bits)
+        int distance = 0;
+        while (xor != 0) {
+            distance += xor & 1; // Add 1 if the least significant bit is 1
+            xor >>>= 1; // Unsigned right shift to check next bit
+        }
+
+        return distance;
+    }
+
+    public int getLastAnswerDistance() {
+        return lastAnswerDistance;
+    }
+
+    public int getCurrentDistance() {
+        return calculateDistance(lastAnswer, getGoal());
+    }
+
+    public char getGoal() {
+        return (char) ('A' + index);
+    }
+
+    public int getChecksUntilResize() {
+        return Math.max(0, 1000 - timeSinceMeetingHighScore);
+    }
+
     private void resetProgress() {
         currentProgress = "";
-        index = 0;
     }
 
     private boolean shouldExpandNetwork() {
-        return timeSinceBeatingHighScore >= 100;
+        return timeSinceMeetingHighScore >= 1000;
     }
 
     private void expandNetwork() {
@@ -109,16 +156,18 @@ public class AutoGrader extends Simulator {
     }
 
     private AutoGrader createExpandedGrader(int width, int height) {
+        int runNeuronsPerCycle = width * height * Constants.DEFAULT_NUM_INCOMING_NEURONS;
         return new AutoGrader(width, height,
-                width * height * Constants.DEFAULT_NUM_INCOMING_NEURONS,
+                runNeuronsPerCycle,
                 Constants.DEFAULT_NUM_INCOMING_NEURONS);
     }
 
     private void transferStateToNewGrader(AutoGrader newGrader) {
         newGrader.furthestProgress = this.furthestProgress;
         newGrader.currentProgress = "";
-        newGrader.index = 0;
-        newGrader.timeSinceBeatingHighScore = 0;
+        newGrader.index = index;
+        newGrader.timeSinceMeetingHighScore = 0;
+        newGrader.lastAnswerDistance = Integer.MAX_VALUE; // Reset distance for new network
     }
 
     private void reinitializeDisplay(AutoGrader newGrader) {

@@ -12,10 +12,8 @@ public class Simulator {
     private final int NUM_INCOMING_NEURONS;
     protected BooleanMatrixDisplay display;
     private int currentIteration;
-    private int totalIterations;
     private int highlightCount;
     private StringBuilder changedCells;
-    private Neuron nextNeuron;
 
     public Simulator() {
         this(Constants.DEFAULT_MATRIX_WIDTH, Constants.DEFAULT_MATRIX_HEIGHT, Constants.DEFAULT_RUN_NEURONS_PER_CYCLE,
@@ -79,7 +77,7 @@ public class Simulator {
     }
 
     public int getTotalIterations() {
-        return totalIterations;
+        return NEURONS.length * NEURONS.length * NEURONS.length * NEURONS[0].length;
     }
 
     public int getHighlightCount() {
@@ -138,24 +136,18 @@ public class Simulator {
     private void initializeCycle() {
         highlightCount = 0;
         currentIteration = 0;
-        totalIterations = runNeuronsPerCycle;
         updateDisplay();
     }
 
     private void executeNeuronComputations() {
-        for (int i = 0; i < runNeuronsPerCycle; i++) {
-            computeNextNeuron();
-            currentIteration++;
-            updateDisplay();
+        for (int n = 0; n < NEURONS.length * NEURONS.length; n++) {
+            for (int i = 0; i < NEURONS.length; i++) {
+                for (int j = 0; j < NEURONS[0].length; j++) {
+                    NEURONS[i][j].computeActivation();
+                    currentIteration++;
+                }
+            }
         }
-    }
-
-    private void computeNextNeuron() {
-        if (nextNeuron == null) {
-            nextNeuron = NEURONS[0][0];
-        }
-        nextNeuron.computeActivation();
-        nextNeuron = nextNeuron.getNextNeuron();
     }
 
     private void highlightResults(int lengthOfResults) {
@@ -197,8 +189,10 @@ public class Simulator {
     }
 
     private void adjustThresholdMultiplier() {
-        activationThresholdMultiplier += LogarithmicSlowingFactor(activationPercentage - 0.5, 1, 10)
-                * (activationPercentage - 0.5);
+        // activationThresholdMultiplier +=
+        // LogarithmicSlowingFactor(activationPercentage - 0.5, 1, 10)
+        // * (activationPercentage - 0.5);
+        activationThresholdMultiplier = activationPercentage;
     }
 
     public double LogarithmicSlowingFactor(double x, int domain, double base) {
@@ -323,7 +317,8 @@ public class Simulator {
         }
 
         public boolean computeActivation() {
-            stake++;
+            for (Neuron neuron : incomingNeurons)
+                neuron.stake++; // Increase the stake for neurons that contribute to the state of this neuron.
             int threshold = calculateThreshold();
             int activationSum = calculateActivationSum(threshold);
             return updateActivationState(activationSum >= threshold);
