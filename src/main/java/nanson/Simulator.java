@@ -9,11 +9,12 @@ public class Simulator {
     private double activationThresholdMultiplier;
     private double activationPercentage;
     protected int runNeuronsPerCycle;
-    private final int NUM_INCOMING_NEURONS;
+    protected final int NUM_INCOMING_NEURONS;
     protected BooleanMatrixDisplay display;
     protected int currentIteration;
     private int highlightCount;
     private StringBuilder changedCells;
+    protected Neuron curNeuron;
 
     public Simulator() {
         this(Constants.DEFAULT_MATRIX_WIDTH, Constants.DEFAULT_MATRIX_HEIGHT, Constants.DEFAULT_RUN_NEURONS_PER_CYCLE,
@@ -45,7 +46,10 @@ public class Simulator {
     private void initializeNeurons() {
         for (int i = 0; i < NEURONS.length; i++) {
             for (int j = 0; j < NEURONS[0].length; j++) {
-                NEURONS[i][j] = new Neuron(this, i, j);
+                if (i == 1 && j < 7 && this instanceof AutoGrader) {
+                    NEURONS[i][j] = new DataNeuron(this, i, j);
+                } else
+                    NEURONS[i][j] = new ActivationNeuron(this, i, j);
             }
         }
     }
@@ -68,6 +72,13 @@ public class Simulator {
         return matrixState;
     }
 
+    public Neuron getNeuronAt(int row, int col) {
+        if (row >= 0 && row < NEURONS.length && col >= 0 && col < NEURONS[0].length) {
+            return NEURONS[row][col];
+        }
+        return null;
+    }
+
     public double getActivationPercentage() {
         return activationPercentage;
     }
@@ -77,7 +88,7 @@ public class Simulator {
     }
 
     public int getTotalIterations() {
-        return NEURONS.length * NEURONS.length * NEURONS.length * NEURONS[0].length;
+        return (int) Math.pow(NEURONS.length * NEURONS[0].length, 3);
     }
 
     public int getHighlightCount() {
@@ -140,15 +151,12 @@ public class Simulator {
     }
 
     protected void executeNeuronComputations(int lengthOfResults) {
-        for (int n = 0; n < NEURONS.length * NEURONS.length; n++) {
-            for (int i = 0; i < NEURONS.length; i++) {
-                for (int j = 0; j < NEURONS[0].length; j++) {
-                    if ((int) (Math.random() * 10000) == 0)
-                        NEURONS[i][j].changeOneThing();
-                    NEURONS[i][j].computeActivation(false);
-                    currentIteration++;
-                }
-            }
+        for (currentIteration = 0; currentIteration < getTotalIterations(); currentIteration++) {
+            if (curNeuron == null)
+                curNeuron = NEURONS[0][0];
+            if ((int) (Math.random() * 10000) == 0)
+                curNeuron.changeOneThing();
+            curNeuron.computeActivation(false);
         }
     }
 
@@ -194,8 +202,10 @@ public class Simulator {
         // activationThresholdMultiplier +=
         // LogarithmicSlowingFactor(activationPercentage - 0.5, 1, 10)
         // * (activationPercentage - 0.5);
-        activationThresholdMultiplier += powerSlowingFactor(activationPercentage - 0.5, 5,
-                1.5) * (activationPercentage - 0.5);
+        // activationThresholdMultiplier += powerSlowingFactor(activationPercentage -
+        // 0.5, 5,
+        // 1.5) * (activationPercentage - 0.5);
+        activationThresholdMultiplier += (activationPercentage - 0.5) * 0.00001;
     }
 
     public double powerSlowingFactor(double x, double domain, double power) {
@@ -230,9 +240,9 @@ public class Simulator {
     }
 
     private void punishLowStakeNeurons(ArrayList<Neuron> sortedNeurons) {
-        int lowestStake = sortedNeurons.get(0).stake;
+        int lowestStake = sortedNeurons.get(0).getStake();
         for (Neuron neuron : sortedNeurons) {
-            if (neuron.stake == lowestStake) {
+            if (neuron.getStake() == lowestStake) {
                 neuron.changeOneThing();
             } else {
                 break;
@@ -241,9 +251,9 @@ public class Simulator {
     }
 
     private void punishHighStakeNeurons(ArrayList<Neuron> sortedNeurons) {
-        int highestStake = sortedNeurons.get(sortedNeurons.size() - 1).stake;
+        int highestStake = sortedNeurons.get(sortedNeurons.size() - 1).getStake();
         for (int i = sortedNeurons.size() - 1; i >= 0; i--) {
-            if (sortedNeurons.get(i).stake == highestStake) {
+            if (sortedNeurons.get(i).getStake() == highestStake) {
                 sortedNeurons.get(i).changeOneThing();
             } else {
                 break;
@@ -252,7 +262,33 @@ public class Simulator {
         sortedNeurons.forEach(Neuron::clearStake);
     }
 
-    public static class Neuron implements Comparable<Neuron> {
+    public static interface Neuron extends Comparable<Neuron> {
+        void changeOneThing();
+
+        boolean computeActivation(boolean bit);
+
+        boolean isActivated();
+
+        void clearStake();
+
+        int getStake();
+
+        void updateStake();
+
+        void setIncomingNeuronsAndWeights(Neuron[] incomingNeurons, boolean[] weights);
+
+        Neuron getNextNeuron();
+
+        Neuron[] getIncomingNeurons();
+
+        boolean isDataNeuron();
+
+        int getRow();
+
+        int getCol();
+    }
+
+    public static class ActivationNeuron implements Neuron {
         private boolean activated;
         private Neuron[] incomingNeurons;
         private boolean[] weights;
@@ -262,7 +298,7 @@ public class Simulator {
         private final int col;
         private int nextNeuronIndex;
 
-        public Neuron(@NotNull Simulator simulator, int row, int col) {
+        public ActivationNeuron(@NotNull Simulator simulator, int row, int col) {
             this.activated = false;
             this.simulator = simulator;
             this.row = row;
@@ -311,12 +347,20 @@ public class Simulator {
             }
         }
 
-        public void setIncomingNeuronsAndWeights(@NotNull Neuron[] incomingNeurons, @NotNull boolean[] weights) {
+        @Override
+        public void setIncomingNeuronsAndWeights(@NotNull Neuron[] incomingNeurons,
+                @NotNull boolean[] weights) {
             this.incomingNeurons = incomingNeurons;
             this.weights = weights;
             nextNeuronIndex = 0;
         }
 
+        @Override
+        public Neuron[] getIncomingNeurons() {
+            return incomingNeurons;
+        }
+
+        @Override
         public Neuron getNextNeuron() {
             if (nextNeuronIndex >= incomingNeurons.length) {
                 nextNeuronIndex = 0;
@@ -324,9 +368,10 @@ public class Simulator {
             return incomingNeurons[nextNeuronIndex++];
         }
 
+        @Override
         public boolean computeActivation(boolean bit) {
-            for (Neuron neuron : incomingNeurons)
-                neuron.stake++; // Increase the stake for neurons that contribute to the state of this neuron.
+            updateStake(); // Increase the stake for this neuron and neurons that contribute to the state
+                           // of this neuron.
             int threshold = calculateThreshold();
             int activationSum = calculateActivationSum(threshold);
             return updateActivationState(activationSum + (bit ? 1 : 0) >= threshold);
@@ -339,7 +384,7 @@ public class Simulator {
         private int calculateActivationSum(int threshold) {
             int activationSum = 0;
             for (int i = 0; i < incomingNeurons.length && i < weights.length; i++) {
-                if (weights[i] && incomingNeurons[i].activated) {
+                if (weights[i] && incomingNeurons[i].isActivated()) {
                     activationSum++;
                 }
                 if (activationSum >= threshold) {
@@ -364,13 +409,137 @@ public class Simulator {
             return activated;
         }
 
+        @Override
+        public int getStake() {
+            return stake;
+        }
+
+        @Override
+        public void updateStake() {
+            updateStake(5, 0);
+        }
+
+        private void updateStake(int maxDepth, int currDepth) {
+            if (currDepth > maxDepth)
+                return;
+            stake += Math.pow(2, maxDepth - currDepth);
+            for (Neuron neuron : incomingNeurons) {
+                if (neuron instanceof ActivationNeuron) {
+                    ((ActivationNeuron) neuron).updateStake(maxDepth, currDepth + 1);
+                }
+            }
+        }
+
+        @Override
         public void clearStake() {
             stake = 0;
         }
 
         @Override
+        public boolean isDataNeuron() {
+            return false;
+        }
+
+        @Override
         public int compareTo(Neuron o) {
-            return Integer.compare(stake, o.stake);
+            return Integer.compare(stake, o.getStake());
+        }
+
+        @Override
+        public int getRow() {
+            return row;
+        }
+
+        @Override
+        public int getCol() {
+            return col;
+        }
+    }
+
+    public static class DataNeuron implements Neuron {
+        private boolean activated;
+        private Simulator simulator;
+        private final int row;
+        private final int col;
+
+        public DataNeuron(@NotNull Simulator simulator, int row, int col) {
+            this.activated = false;
+            this.simulator = simulator;
+            this.row = row;
+            this.col = col;
+        }
+
+        @Override
+        public void changeOneThing() {
+            // DataNeuron doesn't mutate - it's controlled externally
+        }
+
+        @Override
+        public boolean computeActivation(boolean bit) {
+            // DataNeuron's activation depends ONLY on the bit passed in
+            boolean oldActivated = activated;
+            activated = bit;
+
+            if (oldActivated != activated) {
+                simulator.recordCellChange(row, col, activated);
+            }
+
+            return activated;
+        }
+
+        @Override
+        public boolean isActivated() {
+            return activated;
+        }
+
+        @Override
+        public int getStake() {
+            return 0; // DataNeuron doesn't have stake
+        }
+
+        @Override
+        public void updateStake() {
+            // DataNeuron doesn't have stake
+        }
+
+        @Override
+        public void clearStake() {
+            // DataNeuron doesn't have stake
+        }
+
+        @Override
+        public void setIncomingNeuronsAndWeights(Neuron[] incomingNeurons, boolean[] weights) {
+            // DataNeuron doesn't have incoming neurons
+        }
+
+        @Override
+        public Neuron[] getIncomingNeurons() {
+            return new Neuron[0]; // DataNeuron doesn't have incoming neurons
+        }
+
+        @Override
+        public boolean isDataNeuron() {
+            return true;
+        }
+
+        @Override
+        public int compareTo(Neuron o) {
+            return 0; // DataNeurons are all equal in comparison
+        }
+
+        @Override
+        public int getRow() {
+            return row;
+        }
+
+        @Override
+        public int getCol() {
+            return col;
+        }
+
+        @Override
+        public Neuron getNextNeuron() {
+            return null;
         }
     }
 }

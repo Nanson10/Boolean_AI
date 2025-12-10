@@ -17,7 +17,7 @@ public class AutoGrader extends Simulator {
         super(width, height, runNeuronsPerCycle, numIncomingNeurons);
     }
 
-    public AutoGrader(Neuron[][] neurons, int numIncomingNeurons) {
+    public AutoGrader(Simulator.Neuron[][] neurons, int numIncomingNeurons) {
         super(neurons, neurons.length * neurons[0].length * numIncomingNeurons, numIncomingNeurons);
     }
 
@@ -26,19 +26,48 @@ public class AutoGrader extends Simulator {
         // Get the target character and convert it to bits
         char target = (char) ('A' + index);
         boolean[] targetBits = Utilities.charToBooleanArray(target, lengthOfResults);
+        currentIteration = 0;
 
-        for (int n = 0; n < NEURONS.length * NEURONS.length; n++) {
-            for (int i = 0; i < NEURONS.length; i++) {
-                for (int j = 0; j < NEURONS[0].length; j++) {
-                    if ((int) (Math.random() * 10000) == 0)
-                        NEURONS[i][j].changeOneThing();
+        while (currentIteration++ < getTotalIterations()) {
+            for (int totalNeurons = 0; totalNeurons < NEURONS.length
+                    * NEURONS[0].length; totalNeurons++, currentIteration++) {
+                if (curNeuron == null) {
+                    curNeuron = NEURONS[0][0];
+                }
 
-                    // For second row (i == 1), pass the target bit to influence activation
-                    boolean bit = (i == 1 && j < targetBits.length) ? targetBits[j] : false;
-                    NEURONS[i][j].computeActivation(bit);
-                    currentIteration++;
+                boolean bit = (curNeuron.getRow() == 1 && curNeuron.getCol() < targetBits.length)
+                        ? targetBits[curNeuron.getCol()]
+                        : false;
+                curNeuron.computeActivation(bit);
+
+                Neuron nextNeuron = curNeuron.getNextNeuron();
+                if (nextNeuron == null) {
+                    curNeuron = NEURONS[curNeuron.getRow() - 1][0];
+                } else {
+                    curNeuron = nextNeuron;
                 }
             }
+            // After each iteration of n, punish incorrect output neurons
+            punishIncorrectOutputNeurons(lengthOfResults, targetBits);
+        }
+    }
+
+    /**
+     * Punishes output neurons that don't match the target pattern.
+     * For each incorrect neuron, applies punishByDepth with depth 5.
+     */
+    private void punishIncorrectOutputNeurons(int lengthOfResults, boolean[] targetBits) {
+        int index = 0;
+        for (int j = 0; j < NEURONS[0].length && index < lengthOfResults; j++) {
+            boolean currentActivation = NEURONS[0][j].isActivated();
+            boolean expectedActivation = targetBits[index];
+
+            // If this output neuron is incorrect, punish it by depth
+            if (currentActivation != expectedActivation) {
+                punishByDepth(NEURONS[0][j], 5, 0);
+            }
+
+            index++;
         }
     }
 
@@ -95,8 +124,8 @@ public class AutoGrader extends Simulator {
         // Reward if getting closer, punish if getting farther or staying same
         if (currentDistance < lastAnswerDistance) {
             stimulate(true); // Reward for improvement
-        } else {
-            stimulate(false); // Punish for no improvement or getting worse
+        } else if (currentDistance > lastAnswerDistance) {
+            stimulate(false); // Punish for getting worse
         }
         lastAnswerDistance = currentDistance;
         resetProgress();
@@ -203,5 +232,43 @@ public class AutoGrader extends Simulator {
 
     public String getCurrentProgress() {
         return "\"" + currentProgress.length() + "\"";
+    }
+
+    /**
+     * Punishes a neuron and its incoming neurons recursively up to a specified
+     * depth.
+     * The probability of punishment decreases exponentially with depth to account
+     * for
+     * the branching factor of the network.
+     * 
+     * At each depth level, the probability of calling changeOneThing() is:
+     * 0.001 / (NUM_INCOMING_NEURONS ^ curDepth)
+     * 
+     * This ensures that as we traverse deeper into the network and encounter more
+     * neurons due to branching, the overall expected number of mutations remains
+     * reasonable. Without this adjustment, the exponential growth in the number of
+     * neurons at each level would lead to excessive mutations.
+     * 
+     * @param neuron   The neuron to punish (and start traversing from)
+     * @param maxDepth The maximum depth to traverse (typically 5)
+     * @param curDepth The current depth in the recursion (starts at 0)
+     */
+    private void punishByDepth(Simulator.Neuron neuron, int maxDepth, int curDepth) {
+        if (neuron == null || curDepth > maxDepth) {
+            return;
+        }
+
+        // 1 in 1000 chance to change this neuron
+        if (Math.random() < (0.001 / Math.pow(NUM_INCOMING_NEURONS, curDepth))) {
+            neuron.changeOneThing();
+        }
+
+        // Recursively punish incoming neurons
+        Simulator.Neuron[] incomingNeurons = neuron.getIncomingNeurons();
+        if (incomingNeurons != null) {
+            for (Simulator.Neuron incoming : incomingNeurons) {
+                punishByDepth(incoming, maxDepth, curDepth + 1);
+            }
+        }
     }
 }

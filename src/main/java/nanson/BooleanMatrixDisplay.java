@@ -108,10 +108,16 @@ public class BooleanMatrixDisplay {
 
         SwingUtilities.invokeLater(() -> {
             if (cells != null && cells[row] != null && cells[row][col] != null) {
-                // Set background color: red for incorrect bits, green for activated, white for
-                // inactive
+                // Check if this is a DataNeuron
+                Simulator.Neuron neuron = simulator.getNeuronAt(row, col);
+                boolean isDataNeuron = neuron != null && neuron.isDataNeuron();
+
+                // Set background color: orange for active DataNeuron, red for incorrect bits,
+                // green for activated, white for inactive
                 Color backgroundColor;
-                if (isWrongBit) {
+                if (isDataNeuron && value) {
+                    backgroundColor = Color.ORANGE;
+                } else if (isWrongBit) {
                     backgroundColor = Color.RED;
                 } else {
                     backgroundColor = value ? Color.GREEN : Color.WHITE;
@@ -145,7 +151,7 @@ public class BooleanMatrixDisplay {
                 activationPercentageLabel.setText(String.format("Activation: %.2f%%", activationPercentage * 100));
             }
             if (thresholdMultiplierLabel != null) {
-                thresholdMultiplierLabel.setText(String.format("Threshold: %.3f", thresholdMultiplier));
+                thresholdMultiplierLabel.setText(String.format("Threshold: %.5f", thresholdMultiplier));
             }
 
             // Update progress label if AutoGrader is active
@@ -252,10 +258,16 @@ public class BooleanMatrixDisplay {
                 boolean isWrongBit = isIncorrectBit(i, j, currentValue, highlightCount);
                 boolean isBlueHighlighted = isHighlighted(i, j, highlightCount);
 
-                // Set background color: red for incorrect bits, green for activated, white for
-                // inactive
+                // Check if this is a DataNeuron
+                Simulator.Neuron neuron = simulator.getNeuronAt(i, j);
+                boolean isDataNeuron = neuron != null && neuron.isDataNeuron();
+
+                // Set background color: orange for active DataNeuron, red for incorrect bits,
+                // green for activated, white for inactive
                 Color backgroundColor;
-                if (isWrongBit) {
+                if (isDataNeuron && currentValue) {
+                    backgroundColor = Color.ORANGE;
+                } else if (isWrongBit) {
                     backgroundColor = Color.RED;
                 } else {
                     backgroundColor = currentValue ? Color.GREEN : Color.WHITE;
@@ -277,7 +289,7 @@ public class BooleanMatrixDisplay {
             activationPercentageLabel.setText(String.format("Activation: %.2f%%", activationPercentage * 100));
         }
         if (thresholdMultiplierLabel != null) {
-            thresholdMultiplierLabel.setText(String.format("Threshold: %.3f", thresholdMultiplier));
+            thresholdMultiplierLabel.setText(String.format("Threshold: %.5f", thresholdMultiplier));
         }
 
         // Update progress label if AutoGrader is active
