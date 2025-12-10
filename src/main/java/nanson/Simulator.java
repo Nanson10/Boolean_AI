@@ -194,7 +194,7 @@ public class Simulator {
         // activationThresholdMultiplier +=
         // LogarithmicSlowingFactor(activationPercentage - 0.5, 1, 10)
         // * (activationPercentage - 0.5);
-        activationThresholdMultiplier += powerSlowingFactor(activationPercentage - 0.5, 0.5,
+        activationThresholdMultiplier += powerSlowingFactor(activationPercentage - 0.5, 5,
                 0.5) * (activationPercentage - 0.5);
     }
 
