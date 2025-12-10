@@ -143,6 +143,8 @@ public class Simulator {
         for (int n = 0; n < NEURONS.length * NEURONS.length; n++) {
             for (int i = 0; i < NEURONS.length; i++) {
                 for (int j = 0; j < NEURONS[0].length; j++) {
+                    if ((int) (Math.random() * 10000) == 0)
+                        NEURONS[i][j].changeOneThing();
                     NEURONS[i][j].computeActivation();
                     currentIteration++;
                 }
