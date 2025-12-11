@@ -13,7 +13,8 @@
   <scm>
     <!-- Example placeholders: replace OWNER and REPO with your GitHub org/user and repository name -->
     <connection>scm:git:git://github.com/nanson10/Boolean_AI.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com:nanson10/Boolean_AI.git</developerConnection>
+  <!-- Use scp-like SSH URL (git@github.com:owner/repo.git) for developerConnection to avoid hostname parsing issues -->
+  <developerConnection>scm:git:git@github.com:nanson10/Boolean_AI.git</developerConnection>
     <url>https://github.com/nanson10/Boolean_AI</url>
     <tag>boolean_ai-1.0</tag>
   </scm>
