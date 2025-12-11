@@ -109,7 +109,7 @@ public class BooleanMatrixDisplay {
         SwingUtilities.invokeLater(() -> {
             if (cells != null && cells[row] != null && cells[row][col] != null) {
                 // Check if this is a DataNeuron
-                Simulator.Neuron neuron = simulator.getNeuronAt(row, col);
+                Neuron neuron = simulator.getNeuronAt(row, col);
                 boolean isDataNeuron = neuron != null && neuron.isDataNeuron();
 
                 // Set background color: orange for active DataNeuron, red for incorrect bits,
@@ -259,7 +259,7 @@ public class BooleanMatrixDisplay {
                 boolean isBlueHighlighted = isHighlighted(i, j, highlightCount);
 
                 // Check if this is a DataNeuron
-                Simulator.Neuron neuron = simulator.getNeuronAt(i, j);
+                Neuron neuron = simulator.getNeuronAt(i, j);
                 boolean isDataNeuron = neuron != null && neuron.isDataNeuron();
 
                 // Set background color: orange for active DataNeuron, red for incorrect bits,

@@ -1,5 +1,7 @@
 package nanson;
 
+import nanson.Neuron;
+
 public class AutoGrader extends Simulator {
     private String furthestProgress = "";
     private String currentProgress = "";
@@ -17,7 +19,7 @@ public class AutoGrader extends Simulator {
         super(width, height, runNeuronsPerCycle, numIncomingNeurons);
     }
 
-    public AutoGrader(Simulator.Neuron[][] neurons, int numIncomingNeurons) {
+    public AutoGrader(Neuron[][] neurons, int numIncomingNeurons) {
         super(neurons, neurons.length * neurons[0].length * numIncomingNeurons, numIncomingNeurons);
     }
 
@@ -254,7 +256,7 @@ public class AutoGrader extends Simulator {
      * @param maxDepth The maximum depth to traverse (typically 5)
      * @param curDepth The current depth in the recursion (starts at 0)
      */
-    private void punishByDepth(Simulator.Neuron neuron, int maxDepth, int curDepth) {
+    private void punishByDepth(Neuron neuron, int maxDepth, int curDepth) {
         if (neuron == null || curDepth > maxDepth) {
             return;
         }
@@ -265,9 +267,9 @@ public class AutoGrader extends Simulator {
         }
 
         // Recursively punish incoming neurons
-        Simulator.Neuron[] incomingNeurons = neuron.getIncomingNeurons();
+        Neuron[] incomingNeurons = neuron.getIncomingNeurons();
         if (incomingNeurons != null) {
-            for (Simulator.Neuron incoming : incomingNeurons) {
+            for (Neuron incoming : incomingNeurons) {
                 punishByDepth(incoming, maxDepth, curDepth + 1);
             }
         }
