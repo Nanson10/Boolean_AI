@@ -4,7 +4,7 @@
 
   <groupId>nanson</groupId>
   <artifactId>boolean_ai</artifactId>
-  <version>1.0</version>
+  <version>1.0-SNAPSHOT</version>
 
   <name>boolean_ai</name>
   <!-- FIXME change it to the project's website -->
@@ -12,11 +12,10 @@
   <!-- SCM settings: replace placeholders with your repository information before running the release plugin -->
   <scm>
     <!-- Example placeholders: replace OWNER and REPO with your GitHub org/user and repository name -->
-    <connection>scm:git:git://github.com/nanson10/Boolean_AI.git</connection>
+    <connection>scm:git:git@github.com/nanson10/Boolean_AI.git</connection>
   <!-- Use scp-like SSH URL (git@github.com:owner/repo.git) for developerConnection to avoid hostname parsing issues -->
   <developerConnection>scm:git:git@github.com:nanson10/Boolean_AI.git</developerConnection>
-    <url>https://github.com/nanson10/Boolean_AI</url>
-    <tag>boolean_ai-1.0</tag>
+  <url>https://github.com/nanson10/Boolean_AI</url>
   </scm>
 
   <properties>
