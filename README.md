@@ -1,3 +1,47 @@
+# Boolean_AI
+
+This repository is configured to use the Maven Release Plugin.
+
+Important notes before running a release
+
+- The project's `<scm>` section in `pom.xml` must point to your repository. It has been set to:
+
+  - connection: `scm:git:git://github.com/nanson10/Boolean_AI.git`
+  - developerConnection: `scm:git:ssh://git@github.com:nanson10/Boolean_AI.git`
+  - url: `https://github.com/nanson10/Boolean_AI`
+
+  If you use a different remote URL or organization, update those fields in `pom.xml`.
+
+- Ensure your local Git `origin` matches the SCM location and you have push/tag permissions (SSH keys or appropriate HTTPS credentials).
+
+Using the Maven Release Plugin (recommended workflow)
+
+1. Validate the effective POM and plugin configuration:
+
+   mvn help:effective-pom
+
+2. Dry-run prepare (no push) to see what changes will be made locally:
+
+   mvn -DskipTests=true release:prepare -DpushChanges=false
+
+3. If the dry-run looks good, perform the actual release prepare (creates a tag and commits version changes):
+
+   mvn -DskipTests=true release:prepare
+
+4. Perform the release (checks out the tag and builds/deploys the release):
+
+   mvn -DskipTests=true release:perform
+
+Notes and tips
+
+- To skip tests during the release steps, pass `-Darguments='-DskipTests'` to `release:perform` or use `-DskipTests=true` on the command line as shown above.
+- If you prefer the release plugin not to push changes automatically, either set `<pushChanges>false</pushChanges>` in the plugin configuration or use `-DpushChanges=false` on the command line.
+- If you're running this in CI, make sure the CI environment has valid credentials and the git workspace is a proper clone (not a shallow or detached state that prevents tagging/pushing).
+
+Need help?
+
+If you'd like, I can run `mvn help:effective-pom` to validate the POM now, or tweak the plugin config (e.g., change `pushChanges`) per your preferences.
+
 # Boolean AI - Neural Network Simulator
 
 A Java-based neural network simulator that uses boolean logic to simulate neuron activation patterns. The application can learn to generate sequences through reward/punishment-based training.
@@ -13,6 +57,7 @@ A Java-based neural network simulator that uses boolean logic to simulate neuron
 ## Building the Project
 
 ### Prerequisites
+
 - Java 17 or higher
 - Maven 3.6 or higher
 
@@ -31,15 +76,18 @@ The executable JAR will be created at: `target/boolean_ai-1.0-SNAPSHOT.jar`
 ## Running the Application
 
 ### Option 1: Run the JAR (Recommended)
+
 ```bash
 java -jar target/boolean_ai-1.0-SNAPSHOT.jar
 ```
 
 This will launch a GUI dialog where you can choose between:
+
 - **Manual Mode**: Interactive neural network with manual controls
 - **Auto Mode**: Automated learning to generate alphabet sequence
 
 ### Option 2: Run with Maven
+
 ```bash
 # Launch the Driver (selection dialog)
 mvn exec:java -Dexec.mainClass="nanson.Driver"
@@ -54,17 +102,20 @@ mvn exec:java -Dexec.mainClass="nanson.AutoGrader"
 ## How It Works
 
 ### Neural Network Architecture
+
 - Each neuron has configurable incoming connections with boolean weights
 - Activation is determined by weighted sum of inputs vs. threshold
 - The network adjusts its behavior through selective rewiring of poorly-performing neurons
 
 ### Manual Mode
+
 1. Click **Run Cycle** to execute a learning iteration
 2. View the character output generated from neuron states
 3. Click **Reward** if the output is correct (strengthens current neural pathways)
 4. Click **Punish** if incorrect (rewires poorly-performing neurons)
 
 ### Auto Mode
+
 - Automatically attempts to learn the alphabet sequence (A, B, C, ... Z)
 - Rewards correct characters, punishes incorrect ones
 - Tracks current progress and furthest progress achieved
@@ -82,6 +133,7 @@ mvn exec:java -Dexec.mainClass="nanson.AutoGrader"
 ## Configuration
 
 Default configuration in `Constants.java`:
+
 - Matrix Size: 20x20 neurons
 - Neurons per cycle: 1000
 - Incoming connections per neuron: 5
