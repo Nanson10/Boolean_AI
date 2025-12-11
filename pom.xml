@@ -117,8 +117,14 @@
           <scmCommentPrefix>[release]</scmCommentPrefix>
           <!-- Goals to run during the prepare step (adjust as needed) -->
           <preparationGoals>clean verify</preparationGoals>
-          <!-- Push changes to remote after tagging (requires SCM settings to be correct) -->
+          <!-- Push changes and tags to remote GitHub repository -->
           <pushChanges>true</pushChanges>
+          <!-- Use local checkout for better performance -->
+          <localCheckout>true</localCheckout>
+          <!-- Automatically version submodules if present -->
+          <autoVersionSubmodules>true</autoVersionSubmodules>
+          <!-- Goals to run for cleanup after release (prepares workspace for next development iteration) -->
+          <completionGoals>clean</completionGoals>
         </configuration>
       </plugin>
     </plugins>
