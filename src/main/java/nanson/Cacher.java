@@ -8,10 +8,23 @@ import java.util.function.Supplier;
  * Caches data
  *
  * @param <T> is the type of the object being cached.
+ * @author Nanson Chen
+ * @version 2.0
  */
 public class Cacher<T> {
+    /**
+     * Supplier used to obtain the cached value when the cache is invalid.
+     */
     private final Supplier<? extends T> supplier;
+
+    /**
+     * The cached data value.
+     */
     private T data;
+
+    /**
+     * Whether the cached value is currently valid.
+     */
     private boolean valid = false;
 
     /**

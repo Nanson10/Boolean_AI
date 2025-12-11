@@ -4,18 +4,31 @@ package nanson;
  * A data neuron is a "neuron" that can be activated directly.
  *
  * @author Nanson Chen
- * @version December 11th, 2025
+ * @version 2.0
  */
 public class DataNeuron implements Neuron {
+    /**
+     * Index of the layer this data neuron belongs to.
+     */
     private final int neuronLayerIndex;
+
+    /**
+     * Index of this neuron inside its layer.
+     */
     private final int neuronIndex;
+
+    /**
+     * Whether this data neuron is currently activated.
+     */
     private boolean activated;
 
     /**
      * Constructs a DataNeuron.
      *
-     * @param neuronLayerIndex is the index of the neuron layer this neuron resides in.
-     * @param neuronIndex      is the index of the neuron in the neuron layer that this neuron resides in.
+     * @param neuronLayerIndex is the index of the neuron layer this neuron resides
+     *                         in.
+     * @param neuronIndex      is the index of the neuron in the neuron layer that
+     *                         this neuron resides in.
      */
     public DataNeuron(int neuronLayerIndex, int neuronIndex) {
         this.activated = false;
@@ -55,7 +68,7 @@ public class DataNeuron implements Neuron {
     }
 
     @Override
-    public Neuron[] getPreviousNeuronLayer() {
+    public Neuron[] getPotentialInputNeurons() {
         return new Neuron[0]; // DataNeuron doesn't have incoming neurons
     }
 
@@ -82,5 +95,10 @@ public class DataNeuron implements Neuron {
     @Override
     public Neuron getNextNeuron() {
         return null;
+    }
+
+    @Override
+    public void punishByDepth(int denominatorOfProbability) {
+        // DataNeuron can't be punished nor has incoming neurons to punish.
     }
 }

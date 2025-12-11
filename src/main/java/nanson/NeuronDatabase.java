@@ -6,16 +6,21 @@ import java.io.Serializable;
  * Stores the layers and neurons for a simulation.
  *
  * @author Nanson Chen
- * @version December 11th, 2025
+ * @version 2.0
  */
 public class NeuronDatabase implements Serializable {
+    /**
+     * 2D array storing neurons by layer: neurons[layerIndex][neuronIndex].
+     */
     private final Neuron[][] neurons;
 
     /**
      * Constructs a neuron database.
      *
-     * @param incomingConnections are the number of connections each neuron should have.
-     * @param layerLength         is are the lengths of the neuron layers with the number of arguments being the number of layers.
+     * @param incomingConnections are the number of connections each neuron should
+     *                            have.
+     * @param layerLength         is are the lengths of the neuron layers with the
+     *                            number of arguments being the number of layers.
      */
     public NeuronDatabase(int incomingConnections, int... layerLength) {
         neurons = new Neuron[layerLength.length][];

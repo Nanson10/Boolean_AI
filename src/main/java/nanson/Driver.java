@@ -7,9 +7,22 @@ import java.awt.*;
  * Main entry point for the Boolean AI application.
  * Provides a GUI to choose between Manual Mode (BooleanMatrixDisplay)
  * and Auto Mode (AutoGrader).
+ *
+ * @author Nanson Chen
+ * @version 2.0
  */
 public class Driver {
+    /**
+     * Constructs an instance of Driver.
+     */
+    public Driver() {
+    }
 
+    /**
+     * Application entry point. Initializes the UI on the Event Dispatch Thread.
+     *
+     * @param args command-line arguments (ignored)
+     */
     static void main(String[] args) {
         // Set look and feel to system default for better appearance
         try {

@@ -6,7 +6,7 @@ import java.io.Serializable;
  * Represents a neuron and methods it should have.
  *
  * @author Nanson Chen
- * @version December 11th, 2025
+ * @version 2.0
  */
 public interface Neuron extends Serializable {
     /**
@@ -31,23 +31,26 @@ public interface Neuron extends Serializable {
     /**
      * Clears the stake of the neuron.
      *
-     * @deprecated
+     * @deprecated opt for punishByDepth if an output neuron has the wrong answer.
      */
+    @Deprecated(since = "2.0", forRemoval = true)
     void clearStake();
 
     /**
      * Gets the stake of the neuron.
      *
      * @return the stake of the neuron.
-     * @deprecated
+     * @deprecated opt for punishByDepth if an output neuron has the wrong answer.
      */
+    @Deprecated(since = "2.0", forRemoval = true)
     int getStake();
 
     /**
      * Updates the stake of the neuron.
      *
-     * @deprecated
+     * @deprecated opt for punishByDepth if an output neuron has the wrong answer.
      */
+    @Deprecated(since = "2.0", forRemoval = true)
     void updateStake();
 
     /**
@@ -58,11 +61,11 @@ public interface Neuron extends Serializable {
     Neuron getNextNeuron();
 
     /**
-     * Gets the previous neuron layer associated with this neuron.
+     * Gets the neurons that this neuron can pull input neurons from.
      *
      * @return the previous neuron layer.
      */
-    Neuron[] getPreviousNeuronLayer();
+    Neuron[] getPotentialInputNeurons();
 
     /**
      * Gets the incoming neurons that this neuron is using.
@@ -91,4 +94,13 @@ public interface Neuron extends Serializable {
      * @return the index of the neuron in the neuron layer where it resides.
      */
     int getNeuronIndex();
+
+    /**
+     * Punishes the neuron by depth with a chance in mutating one of its parameters
+     * and its incoming neurons.
+     *
+     * @param denominatorOfProbability is the denominator of the probability of
+     *                                 mutation.
+     */
+    void punishByDepth(int denominatorOfProbability);
 }
