@@ -1,6 +1,7 @@
 package nanson;
 
 import org.jetbrains.annotations.NotNull;
+
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
@@ -8,6 +9,8 @@ import java.util.Objects;
 
 public class BooleanMatrixDisplay {
 
+    private static final Object CYCLE_LOCK = new Object();
+    private static final Object INIT_LOCK = new Object();
     private static volatile JFrame frame;
     private static volatile JPanel gridPanel;
     private static volatile JPanel[][] cells;
@@ -16,13 +19,11 @@ public class BooleanMatrixDisplay {
     private static volatile AutoGrader autoGrader;
     private static volatile JButton rewardButton, punishButton, runCycleButton;
     private static volatile JLabel statusLabel, activationPercentageLabel, thresholdMultiplierLabel,
-            characterDisplayLabel, progressLabel, distanceLabel, resizeCountdownLabel;
+        characterDisplayLabel, progressLabel, distanceLabel, resizeCountdownLabel;
     private static volatile int currentHighlightCount = 0;
     private static volatile boolean cycleRunning = false;
     private static volatile boolean autoCycling = false;
     private static volatile Thread autoCycleThread;
-    private static final Object CYCLE_LOCK = new Object();
-    private static final Object INIT_LOCK = new Object();
 
     public BooleanMatrixDisplay(@NotNull Simulator sim) {
         simulator = sim;
@@ -39,10 +40,25 @@ public class BooleanMatrixDisplay {
         startAutoCycling();
     }
 
+    private static void displayCharacterFromBooleanArray(boolean[] arr) {
+        if (arr.length == 0 || arr.length > 16) {
+            System.err.println("Warning: Invalid boolean array length: " + arr.length);
+            return;
+        }
+
+        char character = Utilities.booleanArrayToChar(arr);
+        SwingUtilities.invokeLater(() -> {
+            if (characterDisplayLabel != null) {
+                characterDisplayLabel.setText(String.format("Character: '%c' (0x%04X, %d-bit)",
+                    character, (int) character, arr.length));
+            }
+        });
+    }
+
     /**
      * Update the display by pulling data from the simulator.
      * This is called by the Simulator when it needs to refresh the display.
-     * 
+     *
      * @param changesString A string containing changed cells in format
      *                      "row,col,activation;row,col,activation"
      *                      If empty, pulls all data from simulator for a full
@@ -59,7 +75,7 @@ public class BooleanMatrixDisplay {
             int highlightCount = simulator.getHighlightCount();
 
             displayMatrix(matrix, currentIteration, totalIterations, activationPercentage,
-                    thresholdMultiplier, highlightCount);
+                thresholdMultiplier, highlightCount);
         } else {
             // Incremental update - only update changed cells
             updateChangedCells(changesString);
@@ -159,7 +175,7 @@ public class BooleanMatrixDisplay {
                 String currentProgress = autoGrader.getCurrentProgress();
                 String furthestProgress = autoGrader.getFurthestProgress();
                 progressLabel.setText(String.format("Current: %s | Furthest: %s",
-                        currentProgress, furthestProgress));
+                    currentProgress, furthestProgress));
             }
 
             // Update distance label if AutoGrader is active
@@ -168,8 +184,8 @@ public class BooleanMatrixDisplay {
                 char goal = autoGrader.getGoal();
                 int previousDistance = autoGrader.getLastAnswerDistance();
                 distanceLabel
-                        .setText(String.format("Goal: '%c' | Current Distance: %d | Previous Distance: %d | Target: 0",
-                                goal, currentDistance, previousDistance));
+                    .setText(String.format("Goal: '%c' | Current Distance: %d | Previous Distance: %d | Target: 0",
+                        goal, currentDistance, previousDistance));
             }
 
             // Update resize countdown label if AutoGrader is active
@@ -181,7 +197,7 @@ public class BooleanMatrixDisplay {
     }
 
     public void displayMatrix(@NotNull boolean[][] matrix, int currentIteration, int totalIterations,
-            double activationPercentage, double thresholdMultiplier, int highlightCount) {
+                              double activationPercentage, double thresholdMultiplier, int highlightCount) {
         Objects.requireNonNull(matrix, "Matrix cannot be null");
         if (matrix.length == 0 || matrix[0].length == 0)
             throw new IllegalArgumentException("Matrix cannot be empty");
@@ -199,11 +215,11 @@ public class BooleanMatrixDisplay {
 
         if (SwingUtilities.isEventDispatchThread()) {
             displayMatrixOnEDT(matrixCopy, matrix.length, matrix[0].length, currentIteration,
-                    totalIterations, activationPercentage, thresholdMultiplier, highlightCount);
+                totalIterations, activationPercentage, thresholdMultiplier, highlightCount);
         } else {
             try {
                 SwingUtilities.invokeAndWait(() -> displayMatrixOnEDT(matrixCopy, matrix.length, matrix[0].length,
-                        currentIteration, totalIterations, activationPercentage, thresholdMultiplier, highlightCount));
+                    currentIteration, totalIterations, activationPercentage, thresholdMultiplier, highlightCount));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Thread interrupted while updating display", e);
@@ -216,15 +232,15 @@ public class BooleanMatrixDisplay {
     }
 
     public void displayMatrixPreserveHighlight(@NotNull boolean[][] matrix, int currentIteration,
-            int totalIterations, double activationPercentage,
-            double thresholdMultiplier) {
+                                               int totalIterations, double activationPercentage,
+                                               double thresholdMultiplier) {
         displayMatrix(matrix, currentIteration, totalIterations, activationPercentage, thresholdMultiplier,
-                currentHighlightCount);
+            currentHighlightCount);
     }
 
     private void displayMatrixOnEDT(boolean[][] matrix, int matrixRows, int matrixCols,
-            int currentIteration, int totalIterations,
-            double activationPercentage, double thresholdMultiplier, int highlightCount) {
+                                    int currentIteration, int totalIterations,
+                                    double activationPercentage, double thresholdMultiplier, int highlightCount) {
         synchronized (INIT_LOCK) {
             if (frame == null)
                 initializeFrame();
@@ -297,7 +313,7 @@ public class BooleanMatrixDisplay {
             String currentProgress = autoGrader.getCurrentProgress();
             String furthestProgress = autoGrader.getFurthestProgress();
             progressLabel.setText(String.format("Current: %s | Furthest: %s",
-                    currentProgress, furthestProgress));
+                currentProgress, furthestProgress));
         }
 
         // Update distance label if AutoGrader is active
@@ -306,7 +322,7 @@ public class BooleanMatrixDisplay {
             char goal = autoGrader.getGoal();
             int previousDistance = autoGrader.getLastAnswerDistance();
             distanceLabel.setText(String.format("Goal: '%c' | Current Distance: %d | Previous Distance: %d | Target: 0",
-                    goal, currentDistance, previousDistance));
+                goal, currentDistance, previousDistance));
         }
 
         // Update resize countdown label if AutoGrader is active
@@ -500,7 +516,7 @@ public class BooleanMatrixDisplay {
     /**
      * Reinitialize the display with a new simulator.
      * This clears the current display and sets up for the new simulator.
-     * 
+     *
      * @param newSimulator The new simulator to display
      */
     public void reinitialize(@NotNull Simulator newSimulator) {
@@ -616,20 +632,5 @@ public class BooleanMatrixDisplay {
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    private static void displayCharacterFromBooleanArray(boolean[] arr) {
-        if (arr.length == 0 || arr.length > 16) {
-            System.err.println("Warning: Invalid boolean array length: " + arr.length);
-            return;
-        }
-
-        char character = Utilities.booleanArrayToChar(arr);
-        SwingUtilities.invokeLater(() -> {
-            if (characterDisplayLabel != null) {
-                characterDisplayLabel.setText(String.format("Character: '%c' (0x%04X, %d-bit)",
-                        character, (int) character, arr.length));
-            }
-        });
     }
 }

@@ -3,10 +3,10 @@ package nanson;
 import org.jetbrains.annotations.NotNull;
 
 public class DataNeuron implements Neuron {
-    private boolean activated;
-    private Simulator simulator;
     private final int row;
     private final int col;
+    private boolean activated;
+    private final Simulator simulator;
 
     public DataNeuron(@NotNull Simulator simulator, int row, int col) {
         this.activated = false;

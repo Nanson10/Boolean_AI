@@ -1,7 +1,5 @@
 package nanson;
 
-import nanson.Neuron;
-
 public class AutoGrader extends Simulator {
     private String furthestProgress = "";
     private String currentProgress = "";
@@ -32,14 +30,13 @@ public class AutoGrader extends Simulator {
 
         while (currentIteration++ < getTotalIterations()) {
             for (int totalNeurons = 0; totalNeurons < NEURONS.length
-                    * NEURONS[0].length; totalNeurons++, currentIteration++) {
+                * NEURONS[0].length; totalNeurons++, currentIteration++) {
                 if (curNeuron == null) {
                     curNeuron = NEURONS[0][0];
                 }
 
-                boolean bit = (curNeuron.getRow() == 1 && curNeuron.getCol() < targetBits.length)
-                        ? targetBits[curNeuron.getCol()]
-                        : false;
+                boolean bit =
+                    curNeuron.getRow() == 1 && curNeuron.getCol() < targetBits.length && targetBits[curNeuron.getCol()];
                 curNeuron.computeActivation(bit);
 
                 Neuron nextNeuron = curNeuron.getNextNeuron();
@@ -205,14 +202,14 @@ public class AutoGrader extends Simulator {
             newHeight = currentHeight + 1;
         }
 
-        return new int[] { newWidth, newHeight };
+        return new int[]{newWidth, newHeight};
     }
 
     private AutoGrader createExpandedGrader(int width, int height) {
         int runNeuronsPerCycle = width * height * Constants.DEFAULT_NUM_INCOMING_NEURONS;
         return new AutoGrader(width, height,
-                runNeuronsPerCycle,
-                Constants.DEFAULT_NUM_INCOMING_NEURONS);
+            runNeuronsPerCycle,
+            Constants.DEFAULT_NUM_INCOMING_NEURONS);
     }
 
     private void transferStateToNewGrader(AutoGrader newGrader) {
@@ -243,15 +240,15 @@ public class AutoGrader extends Simulator {
      * The probability of punishment decreases exponentially with depth to account
      * for
      * the branching factor of the network.
-     * 
+     * <p>
      * At each depth level, the probability of calling changeOneThing() is:
      * 0.001 / (NUM_INCOMING_NEURONS ^ curDepth)
-     * 
+     * <p>
      * This ensures that as we traverse deeper into the network and encounter more
      * neurons due to branching, the overall expected number of mutations remains
      * reasonable. Without this adjustment, the exponential growth in the number of
      * neurons at each level would lead to excessive mutations.
-     * 
+     *
      * @param neuron   The neuron to punish (and start traversing from)
      * @param maxDepth The maximum depth to traverse (typically 5)
      * @param curDepth The current depth in the recursion (starts at 0)

@@ -3,13 +3,13 @@ package nanson;
 import org.jetbrains.annotations.NotNull;
 
 public class ActivationNeuron implements Neuron {
+    private final int row;
+    private final int col;
     private boolean activated;
     private Neuron[] incomingNeurons;
     private boolean[] weights;
-    private Simulator simulator;
+    private final Simulator simulator;
     private int stake;
-    private final int row;
-    private final int col;
     private int nextNeuronIndex;
 
     public ActivationNeuron(@NotNull Simulator simulator, int row, int col) {
@@ -63,7 +63,7 @@ public class ActivationNeuron implements Neuron {
 
     @Override
     public void setIncomingNeuronsAndWeights(@NotNull Neuron[] incomingNeurons,
-                                             @NotNull boolean[] weights) {
+                                             boolean @NotNull [] weights) {
         this.incomingNeurons = incomingNeurons;
         this.weights = weights;
         nextNeuronIndex = 0;
@@ -108,7 +108,7 @@ public class ActivationNeuron implements Neuron {
         return activationSum;
     }
 
-    private boolean updateActivationState(boolean shouldActivate) {
+    private void updateActivationState(boolean shouldActivate) {
         boolean oldActivated = activated;
         activated = shouldActivate;
 
@@ -116,9 +116,9 @@ public class ActivationNeuron implements Neuron {
             simulator.recordCellChange(row, col, activated);
         }
 
-        return activated;
     }
 
+    @Override
     public boolean isActivated() {
         return activated;
     }
@@ -136,7 +136,7 @@ public class ActivationNeuron implements Neuron {
     private void updateStake(int maxDepth, int currDepth) {
         if (currDepth > maxDepth)
             return;
-        stake += Math.pow(2, maxDepth - currDepth);
+        stake += (int) Math.pow(2, maxDepth - currDepth);
         for (Neuron neuron : incomingNeurons) {
             if (neuron instanceof ActivationNeuron) {
                 ((ActivationNeuron) neuron).updateStake(maxDepth, currDepth + 1);

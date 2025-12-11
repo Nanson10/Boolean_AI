@@ -5,22 +5,22 @@ import java.awt.*;
 
 /**
  * Main entry point for the Boolean AI application.
- * Provides a GUI to choose between Manual Mode (BooleanMatrixDisplay) 
+ * Provides a GUI to choose between Manual Mode (BooleanMatrixDisplay)
  * and Auto Mode (AutoGrader).
  */
 public class Driver {
-    
-    public static void main(String[] args) {
+
+    static void main(String[] args) {
         // Set look and feel to system default for better appearance
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             // Fall back to default if system look and feel fails
         }
-        
+
         SwingUtilities.invokeLater(() -> showLaunchDialog());
     }
-    
+
     /**
      * Shows a dialog allowing the user to choose between Manual and Auto modes.
      */
@@ -30,35 +30,35 @@ public class Driver {
         launchFrame.setSize(450, 250);
         launchFrame.setLocationRelativeTo(null);
         launchFrame.setLayout(new BorderLayout(10, 10));
-        
+
         // Title panel
         JPanel titlePanel = new JPanel();
         JLabel titleLabel = new JLabel("Boolean AI Neural Network Simulator");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
         titlePanel.add(titleLabel);
         launchFrame.add(titlePanel, BorderLayout.NORTH);
-        
+
         // Description panel
         JPanel descPanel = new JPanel(new GridLayout(3, 1, 5, 5));
         descPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        
+
         JLabel desc1 = new JLabel("Choose a mode to begin:");
         desc1.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        
+
         JLabel desc2 = new JLabel("• Manual Mode: Interactive neural network with manual controls");
         desc2.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        
+
         JLabel desc3 = new JLabel("• Auto Mode: Automated learning to generate alphabet sequence");
         desc3.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        
+
         descPanel.add(desc1);
         descPanel.add(desc2);
         descPanel.add(desc3);
         launchFrame.add(descPanel, BorderLayout.CENTER);
-        
+
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        
+
         JButton manualButton = new JButton("Manual Mode");
         manualButton.setFont(new Font("SansSerif", Font.BOLD, 14));
         manualButton.setPreferredSize(new Dimension(150, 40));
@@ -66,7 +66,7 @@ public class Driver {
             launchFrame.dispose();
             launchManualMode();
         });
-        
+
         JButton autoButton = new JButton("Auto Mode");
         autoButton.setFont(new Font("SansSerif", Font.BOLD, 14));
         autoButton.setPreferredSize(new Dimension(150, 40));
@@ -74,14 +74,14 @@ public class Driver {
             launchFrame.dispose();
             launchAutoMode();
         });
-        
+
         buttonPanel.add(manualButton);
         buttonPanel.add(autoButton);
         launchFrame.add(buttonPanel, BorderLayout.SOUTH);
-        
+
         launchFrame.setVisible(true);
     }
-    
+
     /**
      * Launches the manual mode (BooleanMatrixDisplay).
      */
@@ -91,7 +91,7 @@ public class Driver {
             new BooleanMatrixDisplay(simulator);
         });
     }
-    
+
     /**
      * Launches the auto mode (AutoGrader).
      */

@@ -1,24 +1,23 @@
 package nanson;
 
 import java.util.ArrayList;
-
-import org.jetbrains.annotations.NotNull;
+import java.util.Collections;
 
 public class Simulator {
     protected final Neuron[][] NEURONS;
-    private double activationThresholdMultiplier;
-    private double activationPercentage;
-    protected int runNeuronsPerCycle;
     protected final int NUM_INCOMING_NEURONS;
+    protected int runNeuronsPerCycle;
     protected BooleanMatrixDisplay display;
     protected int currentIteration;
-    private int highlightCount;
-    private StringBuilder changedCells;
     protected Neuron curNeuron;
+    private double activationThresholdMultiplier;
+    private double activationPercentage;
+    private int highlightCount;
+    private final StringBuilder changedCells;
 
     public Simulator() {
         this(Constants.DEFAULT_MATRIX_WIDTH, Constants.DEFAULT_MATRIX_HEIGHT, Constants.DEFAULT_RUN_NEURONS_PER_CYCLE,
-                Constants.DEFAULT_NUM_INCOMING_NEURONS);
+            Constants.DEFAULT_NUM_INCOMING_NEURONS);
     }
 
     public Simulator(Neuron[][] neurons, int runNeuronsPerCycle, int numIncomingNeurons) {
@@ -104,10 +103,10 @@ public class Simulator {
             changedCells.append(Constants.CELL_DELIMITER);
         }
         changedCells.append(row)
-                .append(Constants.FIELD_DELIMITER)
-                .append(col)
-                .append(Constants.FIELD_DELIMITER)
-                .append(activated ? "1" : "0");
+            .append(Constants.FIELD_DELIMITER)
+            .append(col)
+            .append(Constants.FIELD_DELIMITER)
+            .append(activated ? "1" : "0");
     }
 
     private void clearChanges() {
@@ -200,7 +199,7 @@ public class Simulator {
 
     private void adjustThresholdMultiplier() {
         activationThresholdMultiplier += logarithmicSlowingFactor(activationPercentage - 0.5, 1, 10)
-                * (activationPercentage - 0.5) * 0.00001;
+            * (activationPercentage - 0.5) * 0.00001;
         activationThresholdMultiplier += (0.5 - activationThresholdMultiplier) * 0.0000005;
         // activationThresholdMultiplier += powerSlowingFactor(activationPercentage -
         // 0.5, 5,
@@ -231,9 +230,7 @@ public class Simulator {
     private ArrayList<Neuron> getSortedNeuronsByStake() {
         ArrayList<Neuron> neuronList = new ArrayList<>();
         for (Neuron[] neuronRow : NEURONS) {
-            for (Neuron neuron : neuronRow) {
-                neuronList.add(neuron);
-            }
+            Collections.addAll(neuronList, neuronRow);
         }
         neuronList.sort(Neuron::compareTo);
         return neuronList;
