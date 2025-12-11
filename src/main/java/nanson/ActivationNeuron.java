@@ -3,24 +3,27 @@ package nanson;
 import org.jetbrains.annotations.NotNull;
 
 public class ActivationNeuron implements Neuron {
-    private final int row;
-    private final int col;
+    private final int neuronLayerIndex;
+    private final int neuronIndex;
     private boolean activated;
-    private Neuron[] incomingNeurons;
     private boolean[] weights;
-    private final Simulator simulator;
+    private int[] incomingNeuronIndexes;
+    private final NeuronDatabase neuronDatabase;
     private int stake;
     private int nextNeuronIndex;
 
-    public ActivationNeuron(@NotNull Simulator simulator, int row, int col) {
+    public ActivationNeuron(@NotNull NeuronDatabase neuronDatabase, int neuronLayerIndex, int neuronIndex, int incomingConnections) {
         this.activated = false;
-        this.simulator = simulator;
-        this.row = row;
-        this.col = col;
+        this.neuronDatabase = neuronDatabase;
+        this.neuronLayerIndex = neuronLayerIndex;
+        this.neuronIndex = neuronIndex;
         stake = 0;
         nextNeuronIndex = 0;
+        incomingNeuronIndexes = new int[incomingConnections];
+        weights = new boolean[incomingConnections];
     }
 
+    @Override
     public void changeOneThing() {
         int changeType = (int) (Math.random() * 3);
         switch (changeType) {
@@ -37,12 +40,10 @@ public class ActivationNeuron implements Neuron {
     }
 
     private void changeRandomIncomingNeuron() {
-        if (incomingNeurons.length > 0) {
-            int randIndex = (int) (Math.random() * incomingNeurons.length);
-            int randRow = (int) (Math.random() * simulator.NEURONS.length);
-            int randCol = (int) (Math.random() * simulator.NEURONS[0].length);
-            incomingNeurons[randIndex] = simulator.NEURONS[randRow][randCol];
-        }
+        Neuron[] previousNeuronLayer = getPreviousNeuronLayer();
+        int randomIndex = (int) (Math.random() * incomingNeuronIndexes.length);
+        int newIncomingNeuronIndex = (int) (Math.random() * previousNeuronLayer.length);
+        incomingNeuronIndexes[randomIndex] = previousNeuronLayer[newIncomingNeuronIndex].getNeuronIndex();
     }
 
     private void flipRandomWeight() {
@@ -53,68 +54,53 @@ public class ActivationNeuron implements Neuron {
     }
 
     private void changeNextNeuronIndex() {
-        if (incomingNeurons.length > 0) {
-            int temp = nextNeuronIndex;
-            do {
-                nextNeuronIndex = (int) (Math.random() * incomingNeurons.length);
-            } while (nextNeuronIndex == temp);
-        }
+        int temp = nextNeuronIndex;
+        do {
+            nextNeuronIndex = (int) (Math.random() * incomingNeuronIndexes.length);
+        } while (nextNeuronIndex == temp);
     }
 
     @Override
-    public void setIncomingNeuronsAndWeights(@NotNull Neuron[] incomingNeurons,
-                                             boolean @NotNull [] weights) {
-        this.incomingNeurons = incomingNeurons;
-        this.weights = weights;
-        nextNeuronIndex = 0;
-    }
-
-    @Override
-    public Neuron[] getIncomingNeurons() {
-        return incomingNeurons;
+    public Neuron[] getPreviousNeuronLayer() {
+        return neuronDatabase.getNeuronLayer(neuronLayerIndex - 1);
     }
 
     @Override
     public Neuron getNextNeuron() {
-        if (nextNeuronIndex >= incomingNeurons.length) {
+        if (nextNeuronIndex >= incomingNeuronIndexes.length) {
             nextNeuronIndex = 0;
         }
-        return incomingNeurons[nextNeuronIndex++];
+        return getPreviousNeuronLayer()[nextNeuronIndex++];
     }
 
     @Override
     public void computeActivation(boolean bit) {
-        updateStake(); // Increase the stake for this neuron and neurons that contribute to the state
-        // of this neuron.
-        int threshold = calculateThreshold();
-        int activationSum = calculateActivationSum(threshold);
-        updateActivationState(activationSum + (bit ? 1 : 0) >= threshold);
+        updateStake(); // Increase the stake for this neuron and neurons that contribute to the state of this neuron.
+        updateActivationState(evaluateActivation(bit));
     }
 
-    private int calculateThreshold() {
-        return (int) Math.round(simulator.getActivationThresholdMultiplier() * incomingNeurons.length);
+    private int getThreshold() {
+        return incomingNeuronIndexes.length / 2;
     }
 
-    private int calculateActivationSum(int threshold) {
-        int activationSum = 0;
-        for (int i = 0; i < incomingNeurons.length && i < weights.length; i++) {
-            if (weights[i] && incomingNeurons[i].isActivated()) {
+    private boolean evaluateActivation(boolean addOne) {
+        int activationSum = (addOne ? 1 : 0);
+        for (int i = 0; i < incomingNeuronIndexes.length && i < weights.length; i++) {
+            if (weights[i] && getPreviousNeuronLayer()[incomingNeuronIndexes[i]].isActivated())
                 activationSum++;
-            }
-            if (activationSum >= threshold) {
-                break;
-            }
+            if (activationSum >= getThreshold())
+                return true;
         }
-        return activationSum;
+        return false;
     }
 
     private void updateActivationState(boolean shouldActivate) {
         boolean oldActivated = activated;
         activated = shouldActivate;
 
-        if (oldActivated != activated) {
-            simulator.recordCellChange(row, col, activated);
-        }
+        /* if (oldActivated != activated) {
+            neuronDatabase.recordCellChange(neuronLayerIndex, neuronIndex, activated);
+        } */
 
     }
 
@@ -137,7 +123,8 @@ public class ActivationNeuron implements Neuron {
         if (currDepth > maxDepth)
             return;
         stake += (int) Math.pow(2, maxDepth - currDepth);
-        for (Neuron neuron : incomingNeurons) {
+        for (int neuronIndex : incomingNeuronIndexes) {
+            Neuron neuron = getPreviousNeuronLayer()[neuronIndex];
             if (neuron instanceof ActivationNeuron) {
                 ((ActivationNeuron) neuron).updateStake(maxDepth, currDepth + 1);
             }
@@ -160,12 +147,12 @@ public class ActivationNeuron implements Neuron {
     }
 
     @Override
-    public int getRow() {
-        return row;
+    public int getNeuronLayerIndex() {
+        return neuronLayerIndex;
     }
 
     @Override
-    public int getCol() {
-        return col;
+    public int getNeuronIndex() {
+        return neuronIndex;
     }
 }

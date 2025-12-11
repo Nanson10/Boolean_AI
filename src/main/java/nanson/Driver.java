@@ -86,19 +86,11 @@ public class Driver {
      * Launches the manual mode (BooleanMatrixDisplay).
      */
     private static void launchManualMode() {
-        SwingUtilities.invokeLater(() -> {
-            Simulator simulator = new Simulator();
-            new BooleanMatrixDisplay(simulator);
-        });
     }
 
     /**
      * Launches the auto mode (AutoGrader).
      */
     private static void launchAutoMode() {
-        SwingUtilities.invokeLater(() -> {
-            AutoGrader autoGrader = new AutoGrader();
-            new BooleanMatrixDisplay(autoGrader);
-        });
     }
 }

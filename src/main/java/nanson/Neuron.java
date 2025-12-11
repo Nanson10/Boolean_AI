@@ -1,6 +1,8 @@
 package nanson;
 
-public interface Neuron extends Comparable<Neuron> {
+import java.io.Serializable;
+
+public interface Neuron extends Comparable<Neuron>, Serializable {
     void changeOneThing();
 
     void computeActivation(boolean bit);
@@ -13,15 +15,13 @@ public interface Neuron extends Comparable<Neuron> {
 
     void updateStake();
 
-    void setIncomingNeuronsAndWeights(Neuron[] incomingNeurons, boolean[] weights);
-
     Neuron getNextNeuron();
 
-    Neuron[] getIncomingNeurons();
+    Neuron[] getPreviousNeuronLayer();
 
     boolean isDataNeuron();
 
-    int getRow();
+    int getNeuronLayerIndex();
 
-    int getCol();
+    int getNeuronIndex();
 }

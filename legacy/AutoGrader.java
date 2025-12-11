@@ -36,12 +36,12 @@ public class AutoGrader extends Simulator {
                 }
 
                 boolean bit =
-                    curNeuron.getRow() == 1 && curNeuron.getCol() < targetBits.length && targetBits[curNeuron.getCol()];
+                    curNeuron.getNeuronLayerIndex() == 1 && curNeuron.getNeuronIndex() < targetBits.length && targetBits[curNeuron.getNeuronIndex()];
                 curNeuron.computeActivation(bit);
 
                 Neuron nextNeuron = curNeuron.getNextNeuron();
                 if (nextNeuron == null) {
-                    curNeuron = NEURONS[curNeuron.getRow() - 1][0];
+                    curNeuron = NEURONS[curNeuron.getNeuronLayerIndex() - 1][0];
                 } else {
                     curNeuron = nextNeuron;
                 }
@@ -264,7 +264,7 @@ public class AutoGrader extends Simulator {
         }
 
         // Recursively punish incoming neurons
-        Neuron[] incomingNeurons = neuron.getIncomingNeurons();
+        Neuron[] incomingNeurons = neuron.getPreviousNeuronLayer();
         if (incomingNeurons != null) {
             for (Neuron incoming : incomingNeurons) {
                 punishByDepth(incoming, maxDepth, curDepth + 1);

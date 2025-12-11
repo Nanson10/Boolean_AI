@@ -3,16 +3,14 @@ package nanson;
 import org.jetbrains.annotations.NotNull;
 
 public class DataNeuron implements Neuron {
-    private final int row;
-    private final int col;
+    private final int neuronLayerIndex;
+    private final int neuronIndex;
     private boolean activated;
-    private final Simulator simulator;
 
-    public DataNeuron(@NotNull Simulator simulator, int row, int col) {
+    public DataNeuron(int neuronLayerIndex, int neuronIndex) {
         this.activated = false;
-        this.simulator = simulator;
-        this.row = row;
-        this.col = col;
+        this.neuronLayerIndex = neuronLayerIndex;
+        this.neuronIndex = neuronIndex;
     }
 
     @Override
@@ -23,13 +21,7 @@ public class DataNeuron implements Neuron {
     @Override
     public void computeActivation(boolean bit) {
         // DataNeuron's activation depends ONLY on the bit passed in
-        boolean oldActivated = activated;
         activated = bit;
-
-        if (oldActivated != activated) {
-            simulator.recordCellChange(row, col, activated);
-        }
-
     }
 
     @Override
@@ -53,12 +45,7 @@ public class DataNeuron implements Neuron {
     }
 
     @Override
-    public void setIncomingNeuronsAndWeights(Neuron[] incomingNeurons, boolean[] weights) {
-        // DataNeuron doesn't have incoming neurons
-    }
-
-    @Override
-    public Neuron[] getIncomingNeurons() {
+    public Neuron[] getPreviousNeuronLayer() {
         return new Neuron[0]; // DataNeuron doesn't have incoming neurons
     }
 
@@ -73,13 +60,13 @@ public class DataNeuron implements Neuron {
     }
 
     @Override
-    public int getRow() {
-        return row;
+    public int getNeuronLayerIndex() {
+        return neuronLayerIndex;
     }
 
     @Override
-    public int getCol() {
-        return col;
+    public int getNeuronIndex() {
+        return neuronIndex;
     }
 
     @Override
