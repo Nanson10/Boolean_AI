@@ -2,25 +2,42 @@ package nanson;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+
+/**
+ * Represents a neuron that does the main "logic" work.
+ *
+ * @author Nanson Chen
+ * @version December 11th, 2025
+ */
 public class ActivationNeuron implements Neuron {
     private final int neuronLayerIndex;
     private final int neuronIndex;
-    private boolean activated;
-    private boolean[] weights;
-    private int[] incomingNeuronIndexes;
     private final NeuronDatabase neuronDatabase;
+    private final boolean[] weights;
+    private final int[] incomingNeuronIndexes;
+    private boolean activated;
     private int stake;
     private int nextNeuronIndex;
 
-    public ActivationNeuron(@NotNull NeuronDatabase neuronDatabase, int neuronLayerIndex, int neuronIndex, int incomingConnections) {
+    /**
+     * Constructs an ActivationNeuron.
+     *
+     * @param neuronDatabase              is the database this neuron resides in (should only be constructed via database).
+     * @param neuronLayerIndex            is the index of the neuron layer this neuron resides in.
+     * @param neuronIndex                 is the index of the neuron of the neuron layer this neuron resides in.
+     * @param numberOfIncomingConnections is the number of incoming connections this neuron should have.
+     */
+    public ActivationNeuron(@NotNull NeuronDatabase neuronDatabase, int neuronLayerIndex, int neuronIndex,
+                            int numberOfIncomingConnections) {
         this.activated = false;
         this.neuronDatabase = neuronDatabase;
         this.neuronLayerIndex = neuronLayerIndex;
         this.neuronIndex = neuronIndex;
         stake = 0;
         nextNeuronIndex = 0;
-        incomingNeuronIndexes = new int[incomingConnections];
-        weights = new boolean[incomingConnections];
+        incomingNeuronIndexes = new int[numberOfIncomingConnections];
+        weights = new boolean[numberOfIncomingConnections];
     }
 
     @Override
@@ -63,6 +80,14 @@ public class ActivationNeuron implements Neuron {
     @Override
     public Neuron[] getPreviousNeuronLayer() {
         return neuronDatabase.getNeuronLayer(neuronLayerIndex - 1);
+    }
+
+    @Override
+    public Neuron[] getIncomingNeurons() {
+        ArrayList<Neuron> neurons = new ArrayList<>();
+        for (int incomingIndex : incomingNeuronIndexes)
+            neurons.add(getPreviousNeuronLayer()[incomingIndex]);
+        return neurons.toArray(new Neuron[0]);
     }
 
     @Override
@@ -139,11 +164,6 @@ public class ActivationNeuron implements Neuron {
     @Override
     public boolean isDataNeuron() {
         return false;
-    }
-
-    @Override
-    public int compareTo(Neuron o) {
-        return Integer.compare(stake, o.getStake());
     }
 
     @Override

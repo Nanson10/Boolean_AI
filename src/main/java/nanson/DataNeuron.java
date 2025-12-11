@@ -1,12 +1,22 @@
 package nanson;
 
-import org.jetbrains.annotations.NotNull;
-
+/**
+ * A data neuron is a "neuron" that can be activated directly.
+ *
+ * @author Nanson Chen
+ * @version December 11th, 2025
+ */
 public class DataNeuron implements Neuron {
     private final int neuronLayerIndex;
     private final int neuronIndex;
     private boolean activated;
 
+    /**
+     * Constructs a DataNeuron.
+     *
+     * @param neuronLayerIndex is the index of the neuron layer this neuron resides in.
+     * @param neuronIndex      is the index of the neuron in the neuron layer that this neuron resides in.
+     */
     public DataNeuron(int neuronLayerIndex, int neuronIndex) {
         this.activated = false;
         this.neuronLayerIndex = neuronLayerIndex;
@@ -50,13 +60,13 @@ public class DataNeuron implements Neuron {
     }
 
     @Override
-    public boolean isDataNeuron() {
-        return true;
+    public Neuron[] getIncomingNeurons() {
+        return new Neuron[0];
     }
 
     @Override
-    public int compareTo(Neuron o) {
-        return 0; // DataNeurons are all equal in comparison
+    public boolean isDataNeuron() {
+        return true;
     }
 
     @Override

@@ -1,5 +1,11 @@
 package nanson;
 
+/**
+ * Helpful methods
+ *
+ * @author Nanson Chen
+ * @version December 11th, 2025
+ */
 public class Utilities {
     public static char booleanArrayToChar(boolean[] arr) {
         if (arr.length == 0)

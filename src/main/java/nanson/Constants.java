@@ -1,5 +1,11 @@
 package nanson;
 
+/**
+ * Defined constants for the program
+ *
+ * @author Nanson Chen
+ * @version December 11th, 2025
+ */
 public class Constants {
     public static final int DEFAULT_MATRIX_WIDTH = 7;
     public static final int DEFAULT_MATRIX_HEIGHT = 4;
