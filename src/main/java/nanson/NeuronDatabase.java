@@ -24,14 +24,17 @@ public class NeuronDatabase implements Serializable {
      */
     public NeuronDatabase(int incomingConnections, int... layerLength) {
         neurons = new Neuron[layerLength.length][];
-        for (int a = 0; a < layerLength.length; a++)
-            neurons[a] = new Neuron[layerLength[a]];
-        for (int a = 0; a < neurons.length; a++) {
-            for (int b = 0; b < neurons[a].length; b++)
-                if (a == 0)
-                    neurons[a][b] = new DataNeuron(a, b);
-                else
-                    neurons[a][b] = new ActivationNeuron(this, a, b, incomingConnections);
+        for (int row = 0; row < layerLength.length; row++)
+            neurons[row] = new Neuron[layerLength[row]];
+        for (int row = 0; row < neurons.length; row++) {
+            for (int col = 0; col < neurons[row].length; col++)
+                if (row == 0)
+                    neurons[row][col] = new DataNeuron(row, col);
+                else {
+                    neurons[row][col] = new ActivationNeuron(this, row, col, incomingConnections);
+                    for (int iter = 0; iter < neurons[row - 1].length + incomingConnections; iter++)
+                        neurons[row][col].changeOneThing();
+                }
         }
     }
 
@@ -72,5 +75,9 @@ public class NeuronDatabase implements Serializable {
      */
     public Neuron getNeuron(int neuronLayerIndex, int neuronIndex) {
         return neurons[neuronLayerIndex][neuronIndex];
+    }
+
+    public Neuron[] getOutputNeurons() {
+        return neurons[getNumberOfLayers() - 1];
     }
 }

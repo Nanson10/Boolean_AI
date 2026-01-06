@@ -18,15 +18,9 @@ public interface Neuron extends Serializable {
      * Computes the activation of the neuron.
      *
      * @param bit should increase the chance that this neuron activates.
+     * @return whether the neuron is activated or not.
      */
-    void computeActivation(boolean bit);
-
-    /**
-     * Soft check for the activation of the neuron.
-     *
-     * @return true if the neuron is activated, false otherwise.
-     */
-    boolean isActivated();
+    boolean computeActivation(boolean bit);
 
     /**
      * Clears the stake of the neuron.

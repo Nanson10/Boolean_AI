@@ -37,11 +37,6 @@ public class ActivationNeuron implements Neuron {
     private final int[] incomingNeuronIndexes;
 
     /**
-     * Current activation state of this neuron.
-     */
-    private boolean activated;
-
-    /**
      * Transient stake value used by learning/punishment logic.
      */
     private int stake;
@@ -65,7 +60,6 @@ public class ActivationNeuron implements Neuron {
      */
     public ActivationNeuron(@NotNull NeuronDatabase neuronDatabase, int neuronLayerIndex, int neuronIndex,
                             int numberOfIncomingConnections) {
-        this.activated = false;
         this.neuronDatabase = neuronDatabase;
         this.neuronLayerIndex = neuronLayerIndex;
         this.neuronIndex = neuronIndex;
@@ -146,10 +140,10 @@ public class ActivationNeuron implements Neuron {
     }
 
     @Override
-    public void computeActivation(boolean bit) {
+    public boolean computeActivation(boolean bit) {
         updateStake(); // Increase the stake for this neuron and neurons that contribute to the state
         // of this neuron.
-        updateActivationState(evaluateActivation(bit));
+        return evaluateActivation(bit);
     }
 
     /**
@@ -172,34 +166,12 @@ public class ActivationNeuron implements Neuron {
     private boolean evaluateActivation(boolean addOne) {
         int activationSum = (addOne ? 1 : 0);
         for (int i = 0; i < incomingNeuronIndexes.length && i < weights.length; i++) {
-            if (weights[i] && getPotentialInputNeurons()[incomingNeuronIndexes[i]].isActivated())
+            if (weights[i] && getPotentialInputNeurons()[incomingNeuronIndexes[i]].computeActivation(false))
                 activationSum++;
             if (activationSum >= getThreshold())
                 return true;
         }
         return false;
-    }
-
-    /**
-     * Updates the activation state for this neuron. Note: change recording to
-     * the database is currently commented out.
-     *
-     * @param shouldActivate new activation value
-     */
-    private void updateActivationState(boolean shouldActivate) {
-        activated = shouldActivate;
-
-        /*
-         * if (oldActivated != activated) {
-         * neuronDatabase.recordCellChange(neuronLayerIndex, neuronIndex, activated);
-         * }
-         */
-
-    }
-
-    @Override
-    public boolean isActivated() {
-        return activated;
     }
 
     @Override

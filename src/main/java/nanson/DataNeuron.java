@@ -36,19 +36,18 @@ public class DataNeuron implements Neuron {
         this.neuronIndex = neuronIndex;
     }
 
+    public void setActivated(boolean activated) {
+        this.activated = activated;
+    }
+
     @Override
     public void changeOneThing() {
         // DataNeuron doesn't mutate - it's controlled externally
     }
 
     @Override
-    public void computeActivation(boolean bit) {
+    public boolean computeActivation(boolean bit) {
         // DataNeuron's activation depends ONLY on the bit passed in
-        activated = bit;
-    }
-
-    @Override
-    public boolean isActivated() {
         return activated;
     }
 
